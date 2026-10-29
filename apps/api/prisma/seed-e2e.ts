@@ -28,6 +28,16 @@ async function main(): Promise<void> {
     await prisma.user.upsert({ where: { username: user.username }, update: data, create: { ...data, username: user.username } });
   }
   console.log(`Usuarios de prueba listos: ${usernames.join(', ')}`);
+
+  // Semilla de mesas para pruebas e2e
+  for (let i = 1; i <= 12; i++) {
+    await prisma.diningTable.upsert({
+      where: { tableNumber: i },
+      update: {},
+      create: { tableNumber: i, capacity: i % 2 === 0 ? 6 : 4, status: 'LIBRE' },
+    });
+  }
+  console.log('Mesas de prueba listas (1..12)');
 }
 
 main()

@@ -13,6 +13,9 @@ export const ERROR_CODES = [
   'USERNAME_TAKEN',
   'LAST_ADMIN',
   'CANNOT_DISABLE_SELF',
+  'ITEM_NAME_TAKEN',
+  'CATEGORY_NAME_TAKEN',
+  'CATEGORY_NOT_FOUND',
   'INTERNAL_ERROR',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -30,6 +33,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   USERNAME_TAKEN: 'El nombre de usuario ya existe',
   LAST_ADMIN: 'Debe existir al menos un administrador activo',
   CANNOT_DISABLE_SELF: 'No puedes desactivar tu propia cuenta',
+  ITEM_NAME_TAKEN: 'Ya existe un plato con ese nombre en esta categoría',
+  CATEGORY_NAME_TAKEN: 'Ya existe una categoría con ese nombre',
+  CATEGORY_NOT_FOUND: 'La categoría especificada no existe',
   INTERNAL_ERROR: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
 };
 
