@@ -7,3 +7,4 @@ export * from './schemas/auth';
 export * from './schemas/users';
 export * from './schemas/menu';
 export * from './schemas/orders';
+export * from './schemas/kitchen';

@@ -27,6 +27,11 @@ async function main(): Promise<void> {
     select: { id: true },
   });
   const orderIds = testOrders.map((order) => order.id);
+  // Lo que guardó cocina (004) sobre esos ítems va primero.
+  const ofTestItems = { orderItem: { orderId: { in: orderIds } } };
+  await prisma.kitchenVoidAck.deleteMany({ where: { itemVoid: ofTestItems } });
+  await prisma.readyNotice.deleteMany({ where: ofTestItems });
+  await prisma.orderItemStatusChange.deleteMany({ where: ofTestItems });
   await prisma.itemVoid.deleteMany({ where: { orderItem: { orderId: { in: orderIds } } } });
   await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
   await prisma.kitchenDispatch.deleteMany({ where: { orderId: { in: orderIds } } });

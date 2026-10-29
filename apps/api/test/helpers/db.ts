@@ -2,6 +2,9 @@ import type { PrismaService } from '../../src/prisma/prisma.service';
 
 /** Deja la base de pruebas vacía antes de cada prueba, en orden de claves foráneas. */
 export async function resetDb(prisma: PrismaService): Promise<void> {
+  await prisma.kitchenVoidAck.deleteMany();
+  await prisma.readyNotice.deleteMany();
+  await prisma.orderItemStatusChange.deleteMany();
   await prisma.itemVoid.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.kitchenDispatch.deleteMany();

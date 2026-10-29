@@ -16,23 +16,27 @@ enum Role {
 }
 
 model User {
-  id                  String            @id @default(uuid()) @db.Uuid
-  fullName            String            @map("full_name") @db.VarChar(100)
+  id                  String                  @id @default(uuid()) @db.Uuid
+  fullName            String                  @map("full_name") @db.VarChar(100)
   /// Sin espacios en los extremos y en minúsculas (único sin distinguir mayúsculas).
-  username            String            @unique @db.VarChar(30)
+  username            String                  @unique @db.VarChar(30)
   /// Hash Argon2id. Nunca se devuelve en ninguna respuesta.
-  passwordHash        String            @map("password_hash")
+  passwordHash        String                  @map("password_hash")
   role                Role
-  isActive            Boolean           @default(true) @map("is_active")
-  failedLoginAttempts Int               @default(0) @map("failed_login_attempts")
-  lockedUntil         DateTime?         @map("locked_until") @db.Timestamptz(3)
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  isActive            Boolean                 @default(true) @map("is_active")
+  failedLoginAttempts Int                     @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?               @map("locked_until") @db.Timestamptz(3)
+  createdAt           DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
   sessions            Session[]
   // Relaciones inversas de 003-mesas-pedidos (sin columnas nuevas en users).
-  ordersOpened        Order[]           @relation("OrderWaiter")
-  dispatchesSent      KitchenDispatch[] @relation("DispatchSentBy")
-  itemVoids           ItemVoid[]        @relation("ItemVoidedBy")
+  ordersOpened        Order[]                 @relation("OrderWaiter")
+  dispatchesSent      KitchenDispatch[]       @relation("DispatchSentBy")
+  itemVoids           ItemVoid[]              @relation("ItemVoidedBy")
+  // Relaciones inversas de 004-cocina (sin columnas nuevas en users).
+  itemStatusChanges   OrderItemStatusChange[] @relation("ItemStatusChangedBy")
+  readyNotices        ReadyNotice[]           @relation("ReadyNoticeRecipient")
+  voidAcks            KitchenVoidAck[]        @relation("VoidAcknowledgedBy")
 
   @@map("users")
 }
@@ -139,23 +143,26 @@ model Order {
 }
 
 model OrderItem {
-  id             String           @id @default(uuid()) @db.Uuid
-  orderId        String           @map("order_id") @db.Uuid
-  order          Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id             String                  @id @default(uuid()) @db.Uuid
+  orderId        String                  @map("order_id") @db.Uuid
+  order          Order                   @relation(fields: [orderId], references: [id], onDelete: Restrict)
   /// Nulo mientras el ítem está en DRAFT.
-  dispatchId     String?          @map("dispatch_id") @db.Uuid
-  dispatch       KitchenDispatch? @relation(fields: [dispatchId], references: [id], onDelete: Restrict)
-  menuItemId     String           @map("menu_item_id") @db.Uuid
-  menuItem       MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  dispatchId     String?                 @map("dispatch_id") @db.Uuid
+  dispatch       KitchenDispatch?        @relation(fields: [dispatchId], references: [id], onDelete: Restrict)
+  menuItemId     String                  @map("menu_item_id") @db.Uuid
+  menuItem       MenuItem                @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
   quantity       Int
-  voidedQuantity Int              @default(0) @map("voided_quantity")
+  voidedQuantity Int                     @default(0) @map("voided_quantity")
   /// Precio vigente al enviarse (FR-025); nulo mientras el ítem está en DRAFT.
-  unitPrice      Decimal?         @map("unit_price") @db.Decimal(10, 2)
-  notes          String?          @db.VarChar(140)
-  status         OrderItemStatus  @default(DRAFT)
-  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  unitPrice      Decimal?                @map("unit_price") @db.Decimal(10, 2)
+  notes          String?                 @db.VarChar(140)
+  status         OrderItemStatus         @default(DRAFT)
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
   voids          ItemVoid[]
+  // 004-cocina.
+  statusChanges  OrderItemStatusChange[]
+  readyNotices   ReadyNotice[]
 
   @@index([orderId, status])
   @@index([dispatchId])
@@ -180,15 +187,67 @@ model KitchenDispatch {
 }
 
 model ItemVoid {
-  id          String    @id @default(uuid()) @db.Uuid
-  orderItemId String    @map("order_item_id") @db.Uuid
-  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  id          String          @id @default(uuid()) @db.Uuid
+  orderItemId String          @map("order_item_id") @db.Uuid
+  orderItem   OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
   units       Int
-  reason      String    @db.VarChar(200)
-  voidedById  String    @map("voided_by_id") @db.Uuid
-  voidedBy    User      @relation("ItemVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
-  voidedAt    DateTime  @default(now()) @map("voided_at") @db.Timestamptz(3)
+  reason      String          @db.VarChar(200)
+  voidedById  String          @map("voided_by_id") @db.Uuid
+  voidedBy    User            @relation("ItemVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+  voidedAt    DateTime        @default(now()) @map("voided_at") @db.Timestamptz(3)
+  /// "Entendido" de cocina (004-cocina).
+  kitchenAck  KitchenVoidAck?
 
   @@index([orderItemId])
   @@map("item_voids")
+}
+
+// Modelo de datos de specs/004-cocina/data-model.md §1. Cocina no duplica el pedido: cambia
+// `OrderItem.status` y guarda aquí lo que solo le importa a ella. El índice único parcial
+// ready_notices_open_item se agrega a mano en la migración.
+
+/// Historial de cada cambio de estado que hace la cocina (FR-010, "Deshacer").
+model OrderItemStatusChange {
+  id          String          @id @default(uuid()) @db.Uuid
+  orderItemId String          @map("order_item_id") @db.Uuid
+  orderItem   OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  fromStatus  OrderItemStatus @map("from_status")
+  toStatus    OrderItemStatus @map("to_status")
+  /// `true` si el cambio retrocede un paso.
+  isUndo      Boolean         @default(false) @map("is_undo")
+  changedById String          @map("changed_by_id") @db.Uuid
+  changedBy   User            @relation("ItemStatusChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  changedAt   DateTime        @default(now()) @map("changed_at") @db.Timestamptz(3)
+
+  @@index([orderItemId, changedAt])
+  @@map("order_item_status_changes")
+}
+
+/// Aviso de plato listo para el mozo responsable de la mesa (FR-015 a FR-018).
+model ReadyNotice {
+  id          String    @id @default(uuid()) @db.Uuid
+  orderItemId String    @map("order_item_id") @db.Uuid
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  recipientId String    @map("recipient_id") @db.Uuid
+  recipient   User      @relation("ReadyNoticeRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  /// Unidades listas al marcar "Listo" (cantidad − anuladas).
+  quantity    Int
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  seenAt      DateTime? @map("seen_at") @db.Timestamptz(3)
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+
+  @@index([recipientId])
+  @@index([orderItemId])
+  @@map("ready_notices")
+}
+
+/// "Entendido" de cocina sobre una anulación (FR-024, FR-027).
+model KitchenVoidAck {
+  itemVoidId       String   @id @map("item_void_id") @db.Uuid
+  itemVoid         ItemVoid @relation(fields: [itemVoidId], references: [id], onDelete: Restrict)
+  acknowledgedById String   @map("acknowledged_by_id") @db.Uuid
+  acknowledgedBy   User     @relation("VoidAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: Restrict)
+  acknowledgedAt   DateTime @default(now()) @map("acknowledged_at") @db.Timestamptz(3)
+
+  @@map("kitchen_void_acks")
 }
