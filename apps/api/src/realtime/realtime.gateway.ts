@@ -92,4 +92,13 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   ): void {
     this.server.to(roles.map(roleRoom)).emit(event, ...args);
   }
+
+  /** Emite un evento solo a las conexiones de un usuario (por ejemplo, el aviso de plato listo). */
+  emitToUser<E extends keyof ServerToClientEvents>(
+    userId: string,
+    event: E,
+    ...args: Parameters<ServerToClientEvents[E]>
+  ): void {
+    this.server.to(userRoom(userId)).emit(event, ...args);
+  }
 }
