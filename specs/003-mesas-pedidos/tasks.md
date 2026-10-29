@@ -156,12 +156,12 @@ corrige sin pedir permiso antes de enviarlo.
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] Crear `apps/api/src/orders/order-items.service.ts`; todas las operaciones usan `lockOpenOrder` (depende de T011, T012):
+- [X] T030 [US2] Crear `apps/api/src/orders/order-items.service.ts`; todas las operaciones usan `lockOpenOrder` (depende de T011, T012):
   - `add(orderId, dto)`: el plato debe tener `isAvailable` e `isActive`, si no `409 MENU_ITEM_UNAVAILABLE`; crea el ítem `DRAFT` con `notes` recortada. Con la mesa `POR_COBRAR` responde por ahora `409 TABLE_AWAITING_PAYMENT`; la reapertura llega en US6.
   - `update(itemId, dto)` y `remove(itemId)`: solo `DRAFT`, si no `409 ITEM_ALREADY_SENT`; `remove` borra la fila y no emite eventos.
-- [ ] T031 [US2] Agregar `POST orders/:orderId/items` (201, `@Roles('WAITER')`) a `orders.controller.ts` y crear `apps/api/src/orders/order-items.controller.ts` con `PATCH order-items/:itemId` y `DELETE order-items/:itemId` (204), y registrarlo en el módulo (depende de T030)
-- [ ] T032 [P] [US2] Agregar a `apps/web/src/features/orders/api.ts` `useMenuForOrder` (`GET /api/menu/tree?availableOnly=true`), `useAddItem`, `useUpdateItem` y `useRemoveItem`
-- [ ] T033 [US2] Crear `apps/web/src/features/orders/MenuPicker.tsx` (categorías, plato con precio, cantidad con +/− de 44 px, nota opcional con contador de 140 caracteres, "Agregar") y `DraftItems.tsx` (sección "Por enviar": cantidad editable, editar nota, "Quitar" con `ConfirmDialog`, marca "No disponible" si `isAvailable` es falso), e integrarlos en `OrderPage.tsx`, apilados en vertical y lado a lado en 1366 px (depende de T032)
+- [X] T031 [US2] Agregar `POST orders/:orderId/items` (201, `@Roles('WAITER')`) a `orders.controller.ts` y crear `apps/api/src/orders/order-items.controller.ts` con `PATCH order-items/:itemId` y `DELETE order-items/:itemId` (204), y registrarlo en el módulo (depende de T030)
+- [X] T032 [P] [US2] Agregar a `apps/web/src/features/orders/api.ts` `useMenuForOrder` (`GET /api/menu/tree?availableOnly=true`), `useAddItem`, `useUpdateItem` y `useRemoveItem`
+- [X] T033 [US2] Crear `apps/web/src/features/orders/MenuPicker.tsx` (categorías, plato con precio, cantidad con +/− de 44 px, nota opcional con contador de 140 caracteres, "Agregar") y `DraftItems.tsx` (sección "Por enviar": cantidad editable, editar nota, "Quitar" con `ConfirmDialog`, marca "No disponible" si `isAvailable` es falso), e integrarlos en `OrderPage.tsx`, apilados en vertical y lado a lado en 1366 px (depende de T032)
 
 **Checkpoint**: el pedido se toma sin papel; todavía no sale a cocina.
 

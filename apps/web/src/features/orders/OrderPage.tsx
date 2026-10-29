@@ -3,15 +3,17 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { Modal } from '../../components/Modal';
 import { ApiError } from '../../lib/api-client';
 import { ConfirmDialog } from '../users/ConfirmDialog';
-import { useCancelOpening, useOrder, useUpdateGuests } from './api';
+import { useAddItem, useCancelOpening, useOrder, useUpdateGuests } from './api';
+import { DraftItems } from './DraftItems';
 import { GuestCountStepper } from './GuestCountStepper';
+import { MenuPicker, type NewItem } from './MenuPicker';
 import { TABLE_STATUS_LABELS } from './table-status';
 import { useOrdersRealtime } from './useOrdersRealtime';
 
 const errorMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
-/** Pedido de una mesa (/mozo/pedidos/:orderId). La toma de pedido llega con la Historia 2. */
+/** Pedido de una mesa (/mozo/pedidos/:orderId): carta, ítems por enviar y acciones de mesa. */
 export function OrderPage() {
   const { orderId = '' } = useParams();
   return <OrderView key={orderId} orderId={orderId} />;
@@ -23,13 +25,26 @@ function OrderView({ orderId }: { orderId: string }) {
   const { data: order, isPending, isError } = useOrder(orderId);
   const updateGuests = useUpdateGuests(orderId);
   const cancelOpening = useCancelOpening(orderId);
+  const addItem = useAddItem(orderId);
   const [editingGuests, setEditingGuests] = useState<number | null | undefined>(undefined);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (isPending) return <p className="text-lg text-muted">Cargando pedido…</p>;
   if (isError) return <p className="text-lg text-danger">No se pudo cargar el pedido.</p>;
 
   const { table } = order;
+  const isOpen = order.status === 'OPEN';
+  const drafts = order.items.filter((item) => item.status === 'DRAFT');
+
+  const onAdd = (item: NewItem) => {
+    setNotice(null);
+    addItem.mutate(item, {
+      onError: (error) => {
+        setNotice(errorMessage(error));
+      },
+    });
+  };
   return (
     <section className="flex flex-col gap-4">
       <Link to="/mozo" className="touch-target inline-flex items-center self-start text-lg font-medium text-brand underline">
@@ -67,6 +82,20 @@ function OrderView({ orderId }: { orderId: string }) {
             Cancelar apertura
           </button>
         )}
+      </div>
+
+      {notice && (
+        <p role="alert" className="rounded-lg border border-danger px-4 py-3 text-lg text-danger">
+          {notice}
+        </p>
+      )}
+
+      {/* En vertical, carta y pedido se apilan; en 1366 px van lado a lado. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {isOpen && <MenuPicker onAdd={onAdd} pending={addItem.isPending} />}
+        <div className="flex flex-col gap-6">
+          {isOpen && <DraftItems items={drafts} />}
+        </div>
       </div>
 
       {editingGuests !== undefined && (
