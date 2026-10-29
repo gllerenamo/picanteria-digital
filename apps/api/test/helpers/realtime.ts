@@ -7,7 +7,7 @@ import { CSRF } from './factories';
 
 /** Ayudantes de las pruebas de tiempo real (patrón de realtime.acceptance.spec.ts de la 001). */
 
-type TestSocket = Socket<ServerToClientEvents, Record<string, never>>;
+export type TestSocket = Socket<ServerToClientEvents, Record<string, never>>;
 
 /** Arranca la aplicación en un puerto libre y devuelve su URL. */
 export async function listen(app: NestExpressApplication): Promise<string> {

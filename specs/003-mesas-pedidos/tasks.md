@@ -87,7 +87,7 @@ no puede abrirla ni cancelarla; el responsable cancela y vuelve a libre.
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T018 [P] [US1] Escribir en `apps/api/test/acceptance/orders-tables.acceptance.spec.ts`:
+- [X] T018 [P] [US1] Escribir en `apps/api/test/acceptance/orders-tables.acceptance.spec.ts`:
   - `[003] AC-1.1`: `GET /api/orders/tables` lista todas las mesas por número con `status` y, en las no libres, `order.waiter.fullName`.
   - `[003] AC-1.2`: `POST /api/orders` responde 201; la mesa queda `OCUPADA` y el pedido `OPEN` con `waiter` = usuario y `openedAt`.
   - `[003] AC-1.4`: abrir una mesa `OCUPADA` o `POR_COBRAR` responde 409 `TABLE_NOT_AVAILABLE` y no hay un segundo pedido.
@@ -96,34 +96,34 @@ no puede abrirla ni cancelarla; el responsable cancela y vuelve a libre.
   - `[003] AC-1.7`: abrir sin `guestCount` lo deja nulo; otro mozo lo cambia a 4 con `PATCH /api/orders/:id` y responde 200; `guestCount: 0` responde 400.
   - `[003] AC-1.8`: otro mozo cancela y recibe 403 `FORBIDDEN` con "Solo el mozo que abrió la mesa puede cancelar la apertura"; un ADMIN sí puede.
   - Caso sin ID: KITCHEN recibe 403 en `GET /api/orders/tables` y CASHIER, 200.
-- [ ] T019 [P] [US1] Escribir en `apps/api/test/acceptance/orders-realtime.acceptance.spec.ts`: `[003] AC-1.3` (al abrir una mesa, los sockets de otro mozo y de un cajero reciben `orders:table-status-changed` con `tableNumber`, `status: 'OCUPADA'` y `orderId` en menos de 3 s; un socket de cocina no lo recibe)
-- [ ] T020 [P] [US1] Escribir en `apps/web/src/features/orders/TablesBoardPage.test.tsx` (MSW):
+- [X] T019 [P] [US1] Escribir en `apps/api/test/acceptance/orders-realtime.acceptance.spec.ts`: `[003] AC-1.3` (al abrir una mesa, los sockets de otro mozo y de un cajero reciben `orders:table-status-changed` con `tableNumber`, `status: 'OCUPADA'` y `orderId` en menos de 3 s; un socket de cocina no lo recibe)
+- [X] T020 [P] [US1] Escribir en `apps/web/src/features/orders/TablesBoardPage.test.tsx` (MSW):
   - `[003] AC-1.1`: tarjetas "Mesa N" con el texto "Libre", "Ocupada" o "Por cobrar" y el nombre del responsable.
   - `[003] AC-1.3`: un `orders:table-status-changed` simulado hace volver a pedir las mesas y la tarjeta pasa a "Ocupada".
   - `[003] AC-1.5`: un 409 `TABLE_NOT_AVAILABLE` muestra "La mesa ya la abrió Rosa Quispe" y se vuelven a pedir las mesas.
-- [ ] T021 [P] [US1] Escribir en `apps/web/e2e/waiter.spec.ts` (ambos proyectos de tablet), con `mozo` y `mozo2` en dos páginas:
+- [X] T021 [P] [US1] Escribir en `apps/web/e2e/waiter.spec.ts` (ambos proyectos de tablet), con `mozo` y `mozo2` en dos páginas:
   - `[003] AC-1.2`: abrir una mesa lleva a `/mozo/pedidos/:orderId`.
   - `[003] AC-1.3`: la otra página la ve "Ocupada" en menos de 3 s sin recargar.
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Crear `apps/api/src/orders/orders.service.ts` (depende de T005 a T012):
+- [X] T022 [US1] Crear `apps/api/src/orders/orders.service.ts` (depende de T005 a T012):
   - `listTables()`: mesas por número con su orden `OPEN`, el mozo y si hay borradores.
   - `open(dto, user)`: en una transacción, `transition(['LIBRE'], 'OCUPADA')` más crear la orden. Si `transition` devuelve falso o hay un `P2002` del índice parcial, `409 TABLE_NOT_AVAILABLE` con `details { status, openedBy }` y el mensaje "La mesa ya la abrió {nombre}".
   - `getDetail(orderId)` y `updateGuestCount(orderId, dto)`, con `lockOpenOrder`.
   - `cancel(orderId, user)`: responsable o ADMIN, si no `403 FORBIDDEN` con mensaje propio; sin envíos, si no `409 CANCEL_NOT_ALLOWED`; pedido `CANCELLED` con `closedAt`; `transition(['OCUPADA'], 'LIBRE')`, si no `409 TABLE_STATE_CONFLICT` con `details.current`.
   - Después de cada commit que cambie la mesa, `emitToRoles(['WAITER', 'CASHIER'], 'orders:table-status-changed', …)`.
-- [ ] T023 [US1] Crear `apps/api/src/orders/orders.controller.ts` y registrarlo en `orders.module.ts`, con un pipe de UUID como el de `menu.controller.ts` (depende de T022):
+- [X] T023 [US1] Crear `apps/api/src/orders/orders.controller.ts` y registrarlo en `orders.module.ts`, con un pipe de UUID como el de `menu.controller.ts` (depende de T022):
   - `GET orders/tables`, declarado **antes** que `orders/:orderId`, con `@Roles('WAITER', 'CASHIER')`.
   - `POST orders`, 201, con `@Roles('WAITER')`.
   - `GET orders/:orderId` con `@Roles('WAITER', 'CASHIER')`.
   - `PATCH orders/:orderId`.
   - `POST orders/:orderId/cancel`, 204.
   - Cuerpos con `ZodValidationPipe`.
-- [ ] T024 [P] [US1] Crear `apps/web/src/features/orders/api.ts` con las claves `['orders', 'tables']` y `['orders', orderId]` y los hooks `useTablesBoard`, `useOrder` (con `refetchOnWindowFocus` y `refetchInterval: 15_000`, [research.md §10](research.md)), `useOpenTable`, `useUpdateGuests` y `useCancelOpening`, validando las respuestas con los esquemas de T007
-- [ ] T025 [P] [US1] Crear `apps/web/src/features/orders/useOrdersRealtime.ts`: con `useRealtimeEvent` escucha `orders:dispatch-sent`, `orders:item-voided`, `orders:table-status-changed` y `kitchen:item-status-changed`, y la reconexión del socket; ante cualquiera invalida `['orders']` (sin aplicar parches, [research.md §11](research.md))
-- [ ] T026 [US1] Crear `apps/web/src/features/orders/TableCard.tsx` (número, estado con texto y color AA, responsable y comensales; `touch-target`), `OpenTableDialog.tsx` (confirmación "¿Abrir la mesa N?" con comensales opcionales, de 1 a 50, con botones +/−) y `TablesBoardPage.tsx` (rejilla sin desplazamiento horizontal en 768 y 1366 px; tocar una mesa libre abre el diálogo y, al abrir, navega al pedido; tocar una ocupada o por cobrar navega a su pedido; usa `useOrdersRealtime`). `TablesBoardPage` mantiene el título `<h1>Mozo</h1>` que exige la prueba `[001] AC-2.5` (`apps/web/e2e/role-access.spec.ts`) (depende de T024, T025)
-- [ ] T027 [US1] Crear `apps/web/src/features/orders/OrderPage.tsx` con el encabezado:
+- [X] T024 [P] [US1] Crear `apps/web/src/features/orders/api.ts` con las claves `['orders', 'tables']` y `['orders', orderId]` y los hooks `useTablesBoard`, `useOrder` (con `refetchOnWindowFocus` y `refetchInterval: 15_000`, [research.md §10](research.md)), `useOpenTable`, `useUpdateGuests` y `useCancelOpening`, validando las respuestas con los esquemas de T007
+- [X] T025 [P] [US1] Crear `apps/web/src/features/orders/useOrdersRealtime.ts`: con `useRealtimeEvent` escucha `orders:dispatch-sent`, `orders:item-voided`, `orders:table-status-changed` y `kitchen:item-status-changed`, y la reconexión del socket; ante cualquiera invalida `['orders']` (sin aplicar parches, [research.md §11](research.md))
+- [X] T026 [US1] Crear `apps/web/src/features/orders/TableCard.tsx` (número, estado con texto y color AA, responsable y comensales; `touch-target`), `OpenTableDialog.tsx` (confirmación "¿Abrir la mesa N?" con comensales opcionales, de 1 a 50, con botones +/−) y `TablesBoardPage.tsx` (rejilla sin desplazamiento horizontal en 768 y 1366 px; tocar una mesa libre abre el diálogo y, al abrir, navega al pedido; tocar una ocupada o por cobrar navega a su pedido; usa `useOrdersRealtime`). `TablesBoardPage` mantiene el título `<h1>Mozo</h1>` que exige la prueba `[001] AC-2.5` (`apps/web/e2e/role-access.spec.ts`) (depende de T024, T025)
+- [X] T027 [US1] Crear `apps/web/src/features/orders/OrderPage.tsx` con el encabezado:
   - "Mesa N", estado, responsable y comensales editables.
   - "Cancelar apertura", visible si `canCancel`, con `ConfirmDialog` de `features/users/` y el texto "¿Cancelar la apertura de la mesa N? Se descartará lo anotado."; al cancelar, vuelve a `/mozo`.
   - Registrar en `apps/web/src/app/router.tsx` `/mozo` → `TablesBoardPage` y `/mozo/pedidos/:orderId` → `OrderPage`, y borrar `apps/web/src/features/role-home/WaiterHome.tsx` (depende de T026).
