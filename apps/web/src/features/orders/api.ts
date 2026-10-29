@@ -8,6 +8,8 @@ import {
   type AddOrderItemRequest,
   type OpenOrderRequest,
   type UpdateOrderItemRequest,
+  type VoidOrderItemRequest,
+  voidResultSchema,
 } from '@picanteria/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -116,6 +118,16 @@ export function useSendToKitchen(orderId: string) {
     onError: (error) => {
       if (error instanceof ApiError && DEFINITIVE_SEND_ERRORS.has(error.code)) clearKey(orderId);
     },
+    onSettled: invalidate,
+  });
+}
+
+/** Anulación de un ítem enviado; solo el administrador (FR-028). */
+export function useVoidItem() {
+  const invalidate = useInvalidateOrders();
+  return useMutation({
+    mutationFn: ({ itemId, input }: { itemId: string; input: VoidOrderItemRequest }) =>
+      requestJson('POST', `/api/order-items/${itemId}/voids`, voidResultSchema, input),
     onSettled: invalidate,
   });
 }

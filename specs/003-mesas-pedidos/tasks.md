@@ -270,14 +270,14 @@ evento, el mozo ve el ítem anulado y el consumo baja.
 
 ### Implementation for User Story 5
 
-- [ ] T050 [US5] Crear `apps/api/src/orders/voids.service.ts` con `void(itemId, dto, admin)` en una transacción ([research.md §7](research.md)) (depende de T011, T012):
+- [X] T050 [US5] Crear `apps/api/src/orders/voids.service.ts` con `void(itemId, dto, admin)` en una transacción ([research.md §7](research.md)) (depende de T011, T012):
   - El pedido debe estar `OPEN`, si no `409 ORDER_NOT_OPEN`.
   - Con `$queryRaw`: `UPDATE order_items SET voided_quantity = voided_quantity + $units, status = CASE WHEN voided_quantity + $units = quantity THEN 'VOIDED' ELSE status END WHERE id = $id AND status IN ('PENDING','PREPARING') AND quantity - voided_quantity >= $units RETURNING …`.
   - Insertar el `ItemVoid`.
   - Si no se actualizó nada, releer el ítem y responder `409 ITEM_NOT_VOIDABLE` con `details { reason, remainingQuantity }`; el mensaje para `READY` es "El plato ya está listo; no se puede anular".
   - Después del commit, `emitToRoles(['KITCHEN', 'WAITER'], 'orders:item-voided', …)`.
-- [ ] T051 [US5] Agregar a `order-items.controller.ts` `POST order-items/:itemId/voids` (201, `@Roles('ADMIN')`, `ZodValidationPipe(voidOrderItemSchema)`) (depende de T050)
-- [ ] T052 [US5] Agregar `useVoidItem` a `apps/web/src/features/orders/api.ts` y crear `apps/web/src/features/orders/VoidItemDialog.tsx` (unidades con +/−, de 1 a las que quedan, todas por defecto; motivo obligatorio de 3 a 200 caracteres; confirmación); mostrar "Anular" en `SentItems.tsx` solo si el usuario es ADMIN y el ítem está `PENDING` o `PREPARING` con unidades vigentes (depende de T046)
+- [X] T051 [US5] Agregar a `order-items.controller.ts` `POST order-items/:itemId/voids` (201, `@Roles('ADMIN')`, `ZodValidationPipe(voidOrderItemSchema)`) (depende de T050)
+- [X] T052 [US5] Agregar `useVoidItem` a `apps/web/src/features/orders/api.ts` y crear `apps/web/src/features/orders/VoidItemDialog.tsx` (unidades con +/−, de 1 a las que quedan, todas por defecto; motivo obligatorio de 3 a 200 caracteres; confirmación); mostrar "Anular" en `SentItems.tsx` solo si el usuario es ADMIN y el ítem está `PENDING` o `PREPARING` con unidades vigentes (depende de T046)
 
 **Checkpoint**: las correcciones quedan en el sistema, con motivo y responsable.
 

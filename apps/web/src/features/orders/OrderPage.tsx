@@ -8,8 +8,11 @@ import { useAddItem, useCancelOpening, useOrder, useSendToKitchen, useUpdateGues
 import { DraftItems } from './DraftItems';
 import { GuestCountStepper } from './GuestCountStepper';
 import { MenuPicker, type NewItem } from './MenuPicker';
+import type { OrderItemResponse } from '@picanteria/shared';
+import { useCurrentUser } from '../auth/session';
 import { hasPendingKey } from './pending-dispatch';
 import { SentItems } from './SentItems';
+import { VoidItemDialog } from './VoidItemDialog';
 import { TABLE_STATUS_LABELS } from './table-status';
 import { useOrdersRealtime } from './useOrdersRealtime';
 
@@ -40,6 +43,9 @@ function OrderView({ orderId }: { orderId: string }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [sendResult, setSendResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [voiding, setVoiding] = useState<OrderItemResponse | null>(null);
+  const { data: user } = useCurrentUser();
+  const isAdmin = user?.role === 'ADMIN';
 
   if (isPending) return <p className="text-lg text-muted">Cargando pedido…</p>;
   if (isError) return <p className="text-lg text-danger">No se pudo cargar el pedido.</p>;
@@ -140,7 +146,7 @@ function OrderView({ orderId }: { orderId: string }) {
               )}
             </div>
           )}
-          <SentItems order={order} />
+          <SentItems order={order} onVoid={isAdmin && isOpen ? setVoiding : undefined} />
         </div>
       </div>
 
@@ -179,6 +185,15 @@ function OrderView({ orderId }: { orderId: string }) {
             </button>
           </div>
         </Modal>
+      )}
+
+      {voiding && (
+        <VoidItemDialog
+          item={voiding}
+          onClose={() => {
+            setVoiding(null);
+          }}
+        />
       )}
 
       {confirmCancel && (
