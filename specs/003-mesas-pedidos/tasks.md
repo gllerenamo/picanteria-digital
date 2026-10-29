@@ -335,7 +335,7 @@ para mozos y caja, ningún mozo puede liberarla y, al agregar algo, vuelve a ocu
 - [X] T061 [P] Ampliar `apps/web/e2e/tablet.spec.ts` con `/mozo` y `/mozo/pedidos/:orderId` (usando un pedido creado en el `beforeAll`): sin desplazamiento horizontal en 768×1024 y 1366×1024 y controles de al menos 44×44 px (Principio IV)
 - [X] T062 [P] Agregar a `dispatches.acceptance.spec.ts` una prueba de rendimiento sin ID: con 15 mesas y 60 envíos, `GET /api/orders/tables` y `GET /api/orders/:id` responden en menos de 200 ms y un envío en menos de 500 ms (p95 de 20 llamadas) ([plan.md](plan.md), Technical Context)
 - [ ] T063 Ejecutar `npm run typecheck`, `npm run lint`, `npm run test --workspace apps/api`, `npm run test --workspace apps/web` y `npm run test:e2e`, y corregir hasta que todo pase
-- [ ] T064 Ejecutar `npm run check:ac -- 003` (debe dar 41/41) y agregar `003` al paso de cobertura de `.github/workflows/ci.yml` (`npm run check:ac -- 001 002 003`) en este mismo PR
+- [X] T064 Ejecutar `npm run check:ac -- 003` (debe dar 41/41) y agregar `003` al paso de cobertura de `.github/workflows/ci.yml` (`npm run check:ac -- 001 002 003`) en este mismo PR
 - [ ] T065 Hacer el recorrido manual de [quickstart.md](quickstart.md) en tablet (pasos 1 a 15, incluido el cronometraje de SC-006) y anotar los resultados en el PR
 
 ---
