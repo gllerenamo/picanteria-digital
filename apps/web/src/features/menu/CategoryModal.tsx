@@ -66,7 +66,7 @@ export function CategoryModal({ onClose, nextOrder }: CategoryModalProps) {
             }}
             placeholder="Ej. Entradas, Fondos, Bebidas"
             disabled={isSubmitting}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           />
         </div>
 
@@ -82,7 +82,7 @@ export function CategoryModal({ onClose, nextOrder }: CategoryModalProps) {
               setSortOrder(e.target.value);
             }}
             disabled={isSubmitting}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           />
         </div>
 
@@ -93,14 +93,14 @@ export function CategoryModal({ onClose, nextOrder }: CategoryModalProps) {
               onClose();
             }}
             disabled={isSubmitting}
-            className="min-h-[44px] rounded-lg border border-border px-4 py-2 font-medium"
+            className="min-h-[44px] rounded-lg border border-line px-4 py-2 font-medium"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="min-h-[44px] rounded-lg bg-primary px-5 py-2 font-medium text-white shadow"
+            className="min-h-[44px] rounded-lg bg-brand px-5 py-2 font-medium text-white shadow"
           >
             {isSubmitting ? 'Guardando...' : 'Crear categoría'}
           </button>
