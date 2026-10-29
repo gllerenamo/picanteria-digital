@@ -165,7 +165,9 @@ restricciones" de la constitución.
 
 - **Decisión**:
   - **API**: Jest + Supertest contra una base PostgreSQL real de pruebas (`picanteria_test`),
-    reiniciada con migraciones antes de cada suite. Aquí viven las pruebas de los criterios del
+    con las migraciones aplicadas (`prisma migrate deploy`) antes de las suites y las tablas
+    vaciadas antes de cada prueba. Por seguridad, solo se ejecutan contra bases cuyo nombre
+    termina en `_test`. Aquí viven las pruebas de los criterios del
     lado servidor (AC-1.x, AC-2.3, AC-2.4, AC-3.x).
   - **Web**: Vitest + React Testing Library + MSW para componentes y hooks.
   - **Extremo a extremo**: Playwright con perfiles de tablet de 768×1024 (vertical) y

@@ -10,6 +10,8 @@ const common = {
 
 /** @type {import('jest').Config} */
 module.exports = {
+  // Las suites de aceptación comparten la base de pruebas: nunca en paralelo.
+  maxWorkers: 1,
   projects: [
     { ...common, displayName: 'unit', testMatch: ['<rootDir>/src/**/*.spec.ts'] },
     {

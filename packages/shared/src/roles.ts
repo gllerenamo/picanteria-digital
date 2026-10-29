@@ -41,14 +41,15 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/caja', label: 'Caja', roles: ['CASHIER'] },
 ];
 
-function findRoute(path: string): AppRoute | undefined {
+/** Pantalla de APP_ROUTES a la que pertenece una ruta (incluidas sus subrutas). */
+export function appRouteFor(path: string): AppRoute | undefined {
   return APP_ROUTES.find((route) => path === route.path || path.startsWith(`${route.path}/`));
 }
 
 /** Indica si un rol puede abrir una pantalla interna. */
 export function canAccess(role: Role, path: string): boolean {
   if (role === 'ADMIN') return true;
-  return findRoute(path)?.roles.includes(role) ?? false;
+  return appRouteFor(path)?.roles.includes(role) ?? false;
 }
 
 /** Pantallas que aparecen en el menú de un rol, en el orden de APP_ROUTES. */
