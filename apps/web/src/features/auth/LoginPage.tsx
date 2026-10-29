@@ -1,35 +1,28 @@
 import { ERROR_MESSAGES, loginRequestSchema } from '@picanteria/shared';
-import { useState, type SyntheticEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { useEffect, useState, type SyntheticEvent } from 'react';
+import { Navigate, useNavigate } from 'react-router';
 import { StatusMessage } from '../../components/StatusMessage';
 import { ApiError } from '../../lib/api-client';
+import { clearLoginNotice, readLoginNotice } from './login-notice';
 import { useCurrentUser, useLogin } from './session';
-
-/** Aviso que otra pantalla puede enviar al redirigir aquí (por ejemplo, cuenta desactivada). */
-export interface LoginLocationState {
-  notice?: string;
-}
-
-function noticeFrom(state: unknown): string | undefined {
-  if (typeof state === 'object' && state !== null && 'notice' in state && typeof state.notice === 'string') {
-    return state.notice;
-  }
-  return undefined;
-}
 
 export function LoginPage() {
   const { data: currentUser, isPending } = useCurrentUser();
   const login = useLogin();
   const navigate = useNavigate();
-  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  // Aviso pendiente (por ejemplo, cuenta desactivada con la sesión abierta).
+  const [notice] = useState(readLoginNotice);
+
+  useEffect(() => {
+    clearLoginNotice();
+  }, []);
 
   if (isPending) return <StatusMessage text="Cargando…" />;
   if (currentUser) return <Navigate to={currentUser.homePath} replace />;
 
-  const notice = noticeFrom(location.state);
   const apiError = login.error instanceof ApiError ? login.error.message : login.error ? ERROR_MESSAGES.INTERNAL_ERROR : null;
   const errorMessage = validationError ?? apiError;
 

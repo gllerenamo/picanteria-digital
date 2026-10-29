@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import { CURRENT_USER_KEY } from '../features/auth/session';
+import { CURRENT_USER_KEY, clearSession } from '../features/auth/session';
 import { ApiError } from '../lib/api-client';
 
 export function createQueryClient(): QueryClient {
@@ -11,8 +11,7 @@ export function createQueryClient(): QueryClient {
   const onError = (error: unknown) => {
     if (!(error instanceof ApiError)) return;
     if (error.code === 'UNAUTHENTICATED') {
-      client.removeQueries({ predicate: (query) => query.queryKey[0] !== CURRENT_USER_KEY[0] });
-      client.setQueryData(CURRENT_USER_KEY, null);
+      clearSession(client);
     } else if (error.code === 'FORBIDDEN') {
       void client.invalidateQueries({ queryKey: CURRENT_USER_KEY });
     }

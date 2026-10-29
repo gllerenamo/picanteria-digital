@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ROLE_HOME, type CurrentUser, type LoginRequest } from '@picanteria/shared';
 import { AppException } from '../common/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import type { AuthenticatedUser } from './auth.types';
 import { PasswordService } from './password.service';
 import { SessionsService } from './sessions.service';
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionsService,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   /** Orden de comprobación de research.md §7. */
@@ -66,5 +68,6 @@ export class AuthService {
 
   async logout(sessionId: string): Promise<void> {
     await this.sessions.revoke(sessionId);
+    this.realtime.sessionClosed(sessionId);
   }
 }

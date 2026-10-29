@@ -1,0 +1,5 @@
+# Finales de línea LF en el repositorio y en los contenedores, también en Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

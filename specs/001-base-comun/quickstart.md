@@ -22,8 +22,9 @@ Variables relevantes (ver `.env.example`):
 
 | Variable | Uso |
 |----------|-----|
-| `DATABASE_URL` | Base principal `picanteria`. |
-| `DATABASE_URL_TEST` | Base de pruebas `picanteria_test`. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD` | Credenciales del PostgreSQL de Docker Compose, publicado en el puerto **5433** del host para no chocar con un PostgreSQL local. |
+| `DATABASE_URL` | Base principal `picanteria` (`localhost:5433` fuera de Docker). |
+| `DATABASE_URL_TEST` | Base de pruebas `picanteria_test`; las pruebas se niegan a correr si el nombre no termina en `_test`. |
 | `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD` | Administrador inicial que crea la semilla ([research.md §15](research.md)). |
 | `COOKIE_SECURE` | `false` en desarrollo local, `true` en producción. |
 

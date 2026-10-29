@@ -1,0 +1,58 @@
+# Puertas de calidad de la constitución (sección "Flujo de desarrollo y puertas de calidad").
+# Las pruebas extremo a extremo (Playwright + Docker Compose) se ejecutan localmente.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  calidad:
+    name: Typecheck, lint, pruebas y cobertura de criterios
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          # Base efímera solo para las pruebas de CI; no es un secreto.
+          POSTGRES_USER: picanteria
+          POSTGRES_PASSWORD: picanteria-ci
+          POSTGRES_DB: picanteria_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U picanteria -d picanteria_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://picanteria:picanteria-ci@localhost:5432/picanteria_test
+      DATABASE_URL_TEST: postgresql://picanteria:picanteria-ci@localhost:5432/picanteria_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Principio I — TypeScript estricto
+        run: npm run typecheck
+
+      - name: Principio I — Lint (sin any ni @ts-ignore)
+        run: npm run lint
+
+      - name: Principio II — Pruebas unitarias y de aceptación
+        run: npm test
+
+      - name: Principio II — Cada criterio de aceptación tiene su prueba
+        # Agrega aquí el número de cada feature cuando empiece su implementación.
+        run: npm run check:ac -- 001

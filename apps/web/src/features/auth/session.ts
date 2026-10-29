@@ -1,8 +1,18 @@
 import { currentUserSchema, type CurrentUser, type LoginRequest } from '@picanteria/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { ApiError, requestJson, requestVoid } from '../../lib/api-client';
 
 export const CURRENT_USER_KEY = ['auth', 'me'] as const;
+
+/**
+ * Olvida la sesión: primero fija el usuario en `null` (los componentes montados se enteran y
+ * RequireAuth lleva a /ingresar) y luego borra el resto de datos en caché. Eliminar la consulta
+ * del usuario dejaría a los componentes montados con la copia anterior.
+ */
+export function clearSession(queryClient: QueryClient): void {
+  queryClient.setQueryData(CURRENT_USER_KEY, null);
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== CURRENT_USER_KEY[0] });
+}
 
 /** Usuario de la sesión actual, o `null` si no hay sesión válida. */
 export async function fetchCurrentUser(): Promise<CurrentUser | null> {
@@ -38,8 +48,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => requestVoid('POST', '/api/auth/logout'),
     onSettled: () => {
-      queryClient.removeQueries();
-      queryClient.setQueryData(CURRENT_USER_KEY, null);
+      clearSession(queryClient);
     },
   });
 }
