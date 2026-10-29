@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { User } from '@prisma/client';
 import request from 'supertest';
@@ -5,7 +6,15 @@ import type { PrismaService } from '../../src/prisma/prisma.service';
 import { createTestApp, prismaOf } from '../helpers/app';
 import { resetDb } from '../helpers/db';
 import { CSRF, createUser } from '../helpers/factories';
-import { createTable } from '../helpers/order-factories';
+import {
+  createDispatch,
+  createDraftItem,
+  createMenuItem,
+  createOpenOrder,
+  createSentItem,
+  createTable,
+  simulateCashierPayment,
+} from '../helpers/order-factories';
 import { connectAs, expectNoEvent, listen, nextEvent, sessionCookie, type TestSocket } from '../helpers/realtime';
 
 describe('Feature 003 — eventos de tiempo real de mesas y pedidos', () => {
@@ -34,6 +43,10 @@ describe('Feature 003 — eventos de tiempo real de mesas y pedidos', () => {
 
   const user = (role: User['role']) => createUser(prisma, { role });
 
+  /** Cliente HTTP con la sesión del usuario (cookie y cabecera CSRF). */
+  const asUser = async (someone: User & { password: string }) =>
+    request.agent(url).set(CSRF).set('Cookie', await sessionCookie(url, someone));
+
   it('[003] AC-1.3: al abrir una mesa, los demás mozos y caja lo saben sin recargar; cocina no', async () => {
     const juan = await user('WAITER');
     const rosaSocket = await connectAs(url, await user('WAITER'), sockets);
@@ -56,4 +69,31 @@ describe('Feature 003 — eventos de tiempo real de mesas y pedidos', () => {
     await expect(cashierEvent).resolves.toMatchObject(expected);
     await kitchenSilent;
   });
+
+  it('[003] AC-3.2: la cocina recibe el envío en menos de 3 s sin recargar; el reintento no se repite (SC-003)', async () => {
+    const juan = await user('WAITER');
+    const kitchenSocket = await connectAs(url, await user('KITCHEN'), sockets);
+    const { order, table } = await createOpenOrder(prisma, juan.id);
+    const menuItem = await createMenuItem(prisma);
+    await createDraftItem(prisma, order.id, menuItem.id);
+    await createDraftItem(prisma, order.id, menuItem.id, { notes: 'sin ají' });
+    const received = nextEvent(kitchenSocket, 'orders:dispatch-sent');
+    const juanAgent = await asUser(juan);
+    const key = randomUUID();
+
+    const response = await juanAgent.post(`/api/orders/${order.id}/dispatches`).set('Idempotency-Key', key).expect(201);
+
+    await expect(received).resolves.toMatchObject({
+      dispatchId: (response.body as { id: string }).id,
+      sequence: 1,
+      round: 1,
+      orderId: order.id,
+      tableNumber: table.tableNumber,
+      itemCount: 2,
+    });
+    const silent = expectNoEvent(kitchenSocket, 'orders:dispatch-sent');
+    await juanAgent.post(`/api/orders/${order.id}/dispatches`).set('Idempotency-Key', key).expect(201);
+    await silent;
+  });
+
 });

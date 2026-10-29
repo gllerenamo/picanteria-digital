@@ -142,7 +142,7 @@ corrige sin pedir permiso antes de enviarlo.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T028 [P] [US2] Escribir en `apps/api/test/acceptance/order-items.acceptance.spec.ts`:
+- [X] T028 [P] [US2] Escribir en `apps/api/test/acceptance/order-items.acceptance.spec.ts`:
   - `[003] AC-2.1`: un mozo pide `GET /api/menu/tree?availableOnly=true` y recibe solo platos disponibles y activos con `priceFormatted` "S/ …".
   - `[003] AC-2.2`: agregar un plato no disponible responde 409 `MENU_ITEM_UNAVAILABLE` y el plato no sale en la carta disponible.
   - `[003] AC-2.3`: `POST /api/orders/:id/items` con `quantity: 2` y `notes: "sin ají"` responde 201 con un ítem `DRAFT`, `unitPrice: null` y `currentPrice`.
@@ -150,7 +150,7 @@ corrige sin pedir permiso antes de enviarlo.
   - `[003] AC-2.5`: cualquier mozo cambia cantidad o nota de un borrador con `PATCH /api/order-items/:id` y recibe 200; `quantity: 0` responde 400 y una nota de 141 caracteres también.
   - `[003] AC-2.6`: `DELETE /api/order-items/:id` responde 204, el ítem ya no está en `GET /api/orders/:id`, no hay envíos y un socket de cocina no recibe ningún evento en 1 s.
   - `[003] AC-2.7`: los borradores siguen iguales en `GET /api/orders/:id` después de operar en otra mesa.
-- [ ] T029 [P] [US2] Escribir en `apps/web/src/features/orders/OrderPage.test.tsx` (MSW):
+- [X] T029 [P] [US2] Escribir en `apps/web/src/features/orders/OrderPage.test.tsx` (MSW):
   - `[003] AC-2.1`: la carta muestra solo los platos disponibles, por categoría, con "S/ 24.50".
   - `[003] AC-2.6`: "Quitar" abre la confirmación y la API solo se llama al confirmar.
 
@@ -177,7 +177,7 @@ orden de confirmación, y un reintento con la misma clave no duplica.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T034 [P] [US3] Escribir en `apps/api/test/acceptance/dispatches.acceptance.spec.ts`:
+- [X] T034 [P] [US3] Escribir en `apps/api/test/acceptance/dispatches.acceptance.spec.ts`:
   - `[003] AC-3.1`: `POST /api/orders/:id/dispatches` con `Idempotency-Key` responde 201 con `sequence`, `round: 1`, `sentBy`, `sentAt` y los ítems con cantidad y nota; los ítems quedan `PENDING` con `unitPrice` = precio de la carta. FR-025: si después cambia el precio de la carta, el `unitPrice` no cambia.
   - `[003] AC-3.3`: la segunda ronda (`round: 2`) lleva solo los dos ítems nuevos.
   - `[003] AC-3.4`: sin borradores, 409 `NOTHING_TO_SEND` y ningún envío nuevo.
@@ -187,13 +187,13 @@ orden de confirmación, y un reintento con la misma clave no duplica.
   - `[003] AC-3.9` (SC-001): la misma clave dos veces seguidas, y también simultáneas, devuelve el mismo `id` y deja una sola fila; la clave usada en otro pedido da 409 `IDEMPOTENCY_KEY_REUSED`.
   - `[003] AC-3.10`: el mozo B envía en la mesa del mozo A; `sentBy` es B y `order.waiter` sigue siendo A.
   - Caso sin ID: sin la cabecera, o con un valor que no es UUID, responde 400.
-- [ ] T035 [P] [US3] Agregar a `orders-realtime.acceptance.spec.ts`: `[003] AC-3.2` (un socket de cocina recibe `orders:dispatch-sent` con `dispatchId`, `sequence`, `round`, `tableNumber` e `itemCount` en menos de 3 s, SC-003; el reintento con la misma clave no emite otra vez)
-- [ ] T036 [P] [US3] Agregar a `OrderPage.test.tsx`:
+- [X] T035 [P] [US3] Agregar a `orders-realtime.acceptance.spec.ts`: `[003] AC-3.2` (un socket de cocina recibe `orders:dispatch-sent` con `dispatchId`, `sequence`, `round`, `tableNumber` e `itemCount` en menos de 3 s, SC-003; el reintento con la misma clave no emite otra vez)
+- [X] T036 [P] [US3] Agregar a `OrderPage.test.tsx`:
   - `[003] AC-3.1`: tras enviar se ve "Ronda 1 enviada a cocina" y los ítems pasan a la sección enviada como "Pendiente".
   - `[003] AC-3.4`: el botón está deshabilitado sin borradores y, ante un 409 `NOTHING_TO_SEND`, se ve "No hay nada nuevo que enviar".
   - `[003] AC-3.5`: un 409 `ITEMS_UNAVAILABLE` marca esos ítems "No disponible" y muestra el mensaje.
   - `[003] AC-3.8`: un error de red muestra "No se pudo enviar: no hay conexión. Tus ítems siguen por enviar.", los ítems siguen por enviar y "Reintentar" manda la **misma** `Idempotency-Key`, capturada por MSW.
-- [ ] T037 [P] [US3] Agregar a `apps/web/e2e/waiter.spec.ts`:
+- [X] T037 [P] [US3] Agregar a `apps/web/e2e/waiter.spec.ts`:
   - `[003] AC-3.1`: enviar desde la tablet muestra la confirmación.
   - `[003] AC-3.8`: con `context.setOffline(true)` el envío falla, aparece el banner "Sin conexión" y los ítems siguen por enviar.
   - `[003] AC-3.9`: con `page.route` que deja pasar la petición y aborta la respuesta (`route.fetch()` y luego `route.abort()`), "Reintentar" deja un solo envío en `GET /api/orders/:id`.
