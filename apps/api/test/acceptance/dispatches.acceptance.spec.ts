@@ -181,4 +181,36 @@ describe('Feature 003 — US3: enviar el pedido a cocina por rondas', () => {
     expect(await prisma.kitchenDispatch.count()).toBe(0);
   });
 
+  it('rendimiento: con 15 mesas y 60 envíos, consultas en menos de 200 ms y envíos en menos de 500 ms (p95)', async () => {
+    const menuItem = await createMenuItem(prisma);
+    const orders = [];
+    for (let i = 0; i < 15; i++) orders.push((await createOpenOrder(prisma, juan.id)).order);
+    for (let i = 0; i < 60; i++) {
+      const order = orders[i % 15];
+      if (!order) continue;
+      await createSentItem(prisma, await createDispatch(prisma, order.id, juan.id), menuItem, { quantity: 2 });
+    }
+    const p95 = (samples: number[]): number => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * 0.95) - 1] ?? 0;
+    const time = async (run: () => Promise<unknown>): Promise<number> => {
+      const start = performance.now();
+      await run();
+      return performance.now() - start;
+    };
+    const target = orders[0];
+    if (!target) throw new Error('Sin pedidos de prueba');
+
+    const tables: number[] = [];
+    const reads: number[] = [];
+    const sends: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      tables.push(await time(() => juanAgent.get('/api/orders/tables').expect(200)));
+      reads.push(await time(() => juanAgent.get(`/api/orders/${target.id}`).expect(200)));
+      await createDraftItem(prisma, target.id, menuItem.id);
+      sends.push(await time(() => send(juanAgent, target.id).expect(201)));
+    }
+
+    expect(p95(tables)).toBeLessThan(200);
+    expect(p95(reads)).toBeLessThan(200);
+    expect(p95(sends)).toBeLessThan(500);
+  });
 });
