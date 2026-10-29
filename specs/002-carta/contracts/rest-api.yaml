@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Picantería Digital — API de Carta y Mesas
+  version: 1.0.0
+  description: |
+    Contrato HTTP de la feature 002-carta (módulo `menu` y `tables` del backend).
+    - Rutas prefijadas con `/api`.
+    - Autenticación mediante cookie de sesión `sid`.
+    - Modificaciones restringidas al rol `ADMIN`.
+    - Lectura disponible para todos los roles autenticados (`ADMIN`, `WAITER`, `KITCHEN`, `CASHIER`).
+
+paths:
+  /api/menu/categories:
+    get:
+      summary: Listar categorías activas con sus platos
+      responses:
+        '200':
+          description: Lista de categorías en orden de sortOrder
+    post:
+      summary: Crear una nueva categoría (Solo ADMIN)
+      responses:
+        '201':
+          description: Categoría creada
+        '400':
+          description: Datos inválidos
+        '403':
+          description: Sin permiso
+
+  /api/menu/items:
+    get:
+      summary: Listar platos (con filtro opcional de disponibilidad o categoría)
+      parameters:
+        - in: query
+          name: availableOnly
+          schema:
+            type: boolean
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de platos
+    post:
+      summary: Crear un nuevo plato (Solo ADMIN)
+      responses:
+        '201':
+          description: Plato creado
+        '400':
+          description: Datos inválidos
+        '403':
+          description: Sin permiso
+
+  /api/menu/items/{id}:
+    put:
+      summary: Actualizar datos de un plato (Solo ADMIN)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Plato actualizado
+        '403':
+          description: Sin permiso
+        '404':
+          description: Plato no encontrado
+
+  /api/menu/items/{id}/availability:
+    patch:
+      summary: Conmutar disponibilidad del plato (Se acabó el chupe)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Disponibilidad actualizada
+
+  /api/menu/items/{id}/status:
+    patch:
+      summary: Baja o reactivación lógica de plato (Solo ADMIN)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado actualizado
+
+  /api/tables:
+    get:
+      summary: Listar mesas de la picantería
+      responses:
+        '200':
+          description: Lista de mesas con número, capacidad y estado
