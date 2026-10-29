@@ -101,7 +101,7 @@ export function MenuItemModal({
               setCategoryId(e.target.value);
             }}
             disabled={isSubmitting}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
@@ -124,7 +124,7 @@ export function MenuItemModal({
             }}
             placeholder="Ej. Rocoto Relleno"
             disabled={isSubmitting}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           />
         </div>
 
@@ -143,7 +143,7 @@ export function MenuItemModal({
             }}
             placeholder="28.00"
             disabled={isSubmitting}
-            className="mt-1 min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           />
         </div>
 
@@ -160,7 +160,7 @@ export function MenuItemModal({
             }}
             placeholder="Ingredientes o detalles tradicionales"
             disabled={isSubmitting}
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-base"
+            className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2 text-base"
           />
         </div>
 
@@ -171,14 +171,14 @@ export function MenuItemModal({
               onClose();
             }}
             disabled={isSubmitting}
-            className="min-h-[44px] rounded-lg border border-border px-4 py-2 font-medium"
+            className="min-h-[44px] rounded-lg border border-line px-4 py-2 font-medium"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="min-h-[44px] rounded-lg bg-primary px-5 py-2 font-medium text-white shadow"
+            className="min-h-[44px] rounded-lg bg-brand px-5 py-2 font-medium text-white shadow"
           >
             {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear plato'}
           </button>

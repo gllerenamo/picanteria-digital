@@ -64,7 +64,7 @@ export function MenuPage() {
             onClick={() => {
               setIsCatModalOpen(true);
             }}
-            className="min-h-[44px] rounded-xl border border-border bg-card px-4 py-2 font-medium shadow-sm"
+            className="min-h-[44px] rounded-xl border border-line bg-card px-4 py-2 font-medium shadow-sm"
           >
             + Nueva categoría
           </button>
@@ -73,7 +73,7 @@ export function MenuPage() {
             onClick={() => {
               handleNewItem();
             }}
-            className="min-h-[44px] rounded-xl bg-primary px-5 py-2 font-semibold text-white shadow"
+            className="min-h-[44px] rounded-xl bg-brand px-5 py-2 font-semibold text-white shadow"
           >
             + Nuevo plato
           </button>
@@ -89,8 +89,8 @@ export function MenuPage() {
           }}
           className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
             selectedCatId === null
-              ? 'bg-primary text-white shadow'
-              : 'bg-card border border-border text-foreground hover:bg-muted/10'
+              ? 'bg-brand text-white shadow'
+              : 'bg-card border border-line text-ink hover:bg-muted/10'
           }`}
         >
           Todas las categorías ({tree.reduce((acc, cat) => acc + cat.items.length, 0)})
@@ -104,8 +104,8 @@ export function MenuPage() {
             }}
             className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
               selectedCatId === cat.id
-                ? 'bg-primary text-white shadow'
-                : 'bg-card border border-border text-foreground hover:bg-muted/10'
+                ? 'bg-brand text-white shadow'
+                : 'bg-card border border-line text-ink hover:bg-muted/10'
             }`}
           >
             {cat.name} ({cat.items.length})
@@ -117,21 +117,21 @@ export function MenuPage() {
       <div className="flex flex-col gap-8">
         {displayedCategories.map((category) => (
           <section key={category.id} className="flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-border pb-2">
+            <div className="flex items-center justify-between border-b border-line pb-2">
               <h2 className="text-2xl font-bold">{category.name}</h2>
               <button
                 type="button"
                 onClick={() => {
                   handleNewItem(category.id);
                 }}
-                className="text-sm font-medium text-primary hover:underline min-h-[44px] px-2 flex items-center"
+                className="text-sm font-medium text-brand hover:underline min-h-[44px] px-2 flex items-center"
               >
                 + Agregar a {category.name}
               </button>
             </div>
 
             {category.items.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-6 text-center text-muted">
+              <div className="rounded-xl border border-dashed border-line p-6 text-center text-muted">
                 No hay platos registrados en esta categoría.
               </div>
             ) : (
@@ -140,13 +140,13 @@ export function MenuPage() {
                   <div
                     key={item.id}
                     className={`flex flex-col justify-between rounded-2xl border p-4 shadow-sm transition-all ${
-                      item.isAvailable ? 'bg-card border-border' : 'bg-muted/20 border-border opacity-75'
+                      item.isAvailable ? 'bg-card border-line' : 'bg-muted/20 border-line opacity-75'
                     }`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-lg font-bold">{item.name}</h3>
-                        <span className="text-lg font-extrabold text-primary whitespace-nowrap">
+                        <span className="text-lg font-extrabold text-brand whitespace-nowrap">
                           {item.priceFormatted}
                         </span>
                       </div>
@@ -155,7 +155,7 @@ export function MenuPage() {
                       )}
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between gap-2">
+                    <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -176,7 +176,7 @@ export function MenuPage() {
                           onClick={() => {
                             handleEditItem(item);
                           }}
-                          className="min-h-[44px] px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted/10"
+                          className="min-h-[44px] px-3 py-1.5 rounded-lg text-xs font-medium border border-line hover:bg-muted/10"
                         >
                           Editar
                         </button>
