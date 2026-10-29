@@ -171,9 +171,13 @@ restricciones" de la constitución.
   - **Extremo a extremo**: Playwright con perfiles de tablet de 768×1024 (vertical) y
     1366×1024 (horizontal) contra la aplicación levantada con Docker Compose. Aquí viven los
     criterios visibles (AC-1.7, AC-2.1, AC-2.2, AC-2.5, AC-2.6, AC-3.9) y SC-006.
-  - **Trazabilidad**: el título de cada prueba de aceptación empieza con su ID
-    (`"AC-1.3: …"`). El script `scripts/check-ac-coverage.ts` extrae los IDs de `spec.md` y
-    falla si alguno no aparece en ninguna prueba.
+  - **Trazabilidad**: el título de cada prueba de aceptación empieza con el número de la
+    feature y el ID del criterio (`"[001] AC-1.3: …"`). El prefijo es necesario porque todas
+    las features usan el formato acordado `AC-<historia>.<n>` y los ID se repiten entre ellas.
+    El script `scripts/check-ac-coverage.ts` extrae los ID de cada `specs/NNN-*/spec.md` y
+    falla si alguno no aparece como `[NNN] AC-x.y` en ninguna prueba. Acepta números de
+    feature como argumentos (`npm run check:ac -- 001`); sin argumentos revisa solo las
+    features que ya tienen al menos una prueba etiquetada.
 - **Razón**: cumple el Principio II de forma verificable. Jest es el corredor por defecto de
   NestJS; probar contra PostgreSQL real evita falsos positivos de mocks en transacciones y
   restricciones únicas.
@@ -209,13 +213,14 @@ restricciones" de la constitución.
 | `prisma`, `@prisma/client` | api | ORM y migraciones versionadas (pedido del usuario; constitución exige migraciones) |
 | `zod` | shared, api, web | Validación en tiempo de ejecución y tipos compartidos (Principio I) |
 | `argon2` | api | Hash de contraseñas recomendado por OWASP |
-| `cookie-parser` | api | Lectura de la cookie de sesión en HTTP |
+| `cookie-parser`, `cookie` | api | Lectura de la cookie de sesión en HTTP y en el handshake de Socket.IO |
 | `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io` | api | Canal de tiempo real (pedido del usuario) |
 | `socket.io-client` | web | Cliente del canal de tiempo real |
 | `react-router` | web | Rutas y protección por rol |
 | `@tanstack/react-query` | web | Estado del servidor y caché |
 | `react-hook-form`, `@hookform/resolvers` | web | Formularios con validación Zod |
 | `tailwindcss` | web | Estilos y tokens para tablet (Principio IV) |
-| `jest`, `supertest` | api | Pruebas de aceptación del servidor (Principio II) |
+| `jest`, `supertest`, `socket.io-client` | api (dev) | Pruebas de aceptación del servidor y del canal de tiempo real (Principio II) |
+| `tsx`, `concurrently` | raíz (dev) | Ejecutar `scripts/check-ac-coverage.ts` y levantar api y web a la vez con `npm run dev` |
 | `vitest`, `@testing-library/react`, `msw` | web | Pruebas de componentes |
 | `@playwright/test` | web | Pruebas extremo a extremo en viewport de tablet |
