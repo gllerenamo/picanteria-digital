@@ -1,0 +1,467 @@
+openapi: 3.1.0
+info:
+  title: Picantería Digital — API de autenticación y usuarios
+  version: 1.0.0
+  description: |
+    Contrato HTTP de la feature 001-base-comun (módulo `auth` del backend).
+
+    - Todas las rutas cuelgan de `/api` y se sirven desde el mismo origen que el frontend.
+    - La sesión viaja en la cookie `sid` (HttpOnly, SameSite=Strict, Secure en producción,
+      12 h). Todas las rutas requieren sesión salvo `POST /auth/login`.
+    - Las peticiones que modifican datos (POST, PATCH, PUT) deben enviar la cabecera
+      `X-Requested-With: picanteria-web`; sin ella responden 403 `CSRF_HEADER_MISSING`.
+    - Los errores siguen el esquema `Error`: `code` estable en inglés para el código y
+      `message` en español para mostrar al usuario (Principio III).
+    - Los esquemas de este archivo tienen su equivalente Zod en `packages/shared`.
+servers:
+  - url: /api
+tags:
+  - name: auth
+    description: Inicio y cierre de sesión
+  - name: users
+    description: Gestión de usuarios (solo administrador)
+
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión
+      description: |
+        Crea una sesión y devuelve la cookie `sid`. Orden de comprobación en
+        [research.md §7](../research.md). Cubre AC-1.1 a AC-1.4 y AC-1.6.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Ingreso correcto.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              example: sid=<token>; Path=/; HttpOnly; SameSite=Strict; Max-Age=43200
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Credenciales incorrectas o cuenta desactivada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidCredentials:
+                  value:
+                    code: INVALID_CREDENTIALS
+                    message: Usuario o contraseña incorrectos
+                accountDisabled:
+                  value:
+                    code: ACCOUNT_DISABLED
+                    message: Tu cuenta está desactivada. Consulta al administrador.
+        '423':
+          description: Cuenta bloqueada temporalmente por intentos fallidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: ACCOUNT_LOCKED
+                message: Cuenta bloqueada por intentos fallidos. Inténtalo de nuevo en 15 minutos.
+                details:
+                  lockedUntil: '2026-10-28T21:15:00.000Z'
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Cerrar sesión
+      description: Revoca la sesión actual y borra la cookie. Cubre AC-1.5.
+      responses:
+        '204':
+          description: Sesión cerrada.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Usuario de la sesión actual
+      description: |
+        Devuelve el usuario, su rol y su pantalla inicial. El frontend lo consulta al cargar
+        y tras el evento `auth:profile-changed`. Cubre AC-1.7 (401 sin sesión) y AC-2.4.
+      responses:
+        '200':
+          description: Sesión válida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /users:
+    get:
+      tags: [users]
+      summary: Listar usuarios
+      description: Solo administrador. Nunca incluye contraseñas. Cubre AC-3.9.
+      responses:
+        '200':
+          description: Lista de usuarios ordenada por nombre completo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [users]
+      summary: Registrar usuario
+      description: Solo administrador. Cubre AC-3.1, AC-3.2 y AC-3.3.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Usuario creado y activo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: El nombre de usuario ya existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: USERNAME_TAKEN
+                message: El nombre de usuario ya existe
+
+  /users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [users]
+      summary: Editar nombre completo o rol
+      description: |
+        Solo administrador. Un cambio de rol emite `auth:profile-changed` al usuario afectado.
+        Cubre AC-3.4, AC-2.4 y AC-3.8 (quitar el rol al último administrador).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Usuario actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/LastAdmin'
+
+  /users/{id}/password:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [users]
+      summary: Asignar contraseña nueva
+      description: |
+        Solo administrador. Reinicia el contador de intentos fallidos y el bloqueo. Las
+        sesiones abiertas del usuario siguen vigentes. Cubre AC-3.5.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+      responses:
+        '204':
+          description: Contraseña reemplazada.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [users]
+      summary: Activar o desactivar usuario
+      description: |
+        Solo administrador. Desactivar revoca todas las sesiones del usuario y emite
+        `auth:session-revoked`. Cubre AC-3.6, AC-3.7 y AC-3.8.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetStatusRequest'
+      responses:
+        '200':
+          description: Estado actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Desactivar al último administrador o a uno mismo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                lastAdmin:
+                  value:
+                    code: LAST_ADMIN
+                    message: Debe existir al menos un administrador activo
+                self:
+                  value:
+                    code: CANNOT_DISABLE_SELF
+                    message: No puedes desactivar tu propia cuenta
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sid
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Role:
+      type: string
+      enum: [ADMIN, WAITER, KITCHEN, CASHIER]
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: Se quitan espacios en los extremos y se compara en minúsculas.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+
+    CurrentUser:
+      type: object
+      required: [id, fullName, username, role, homePath]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        username:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        homePath:
+          type: string
+          description: Pantalla inicial del rol (ver contracts/ui-routes.md).
+          example: /mozo
+
+    User:
+      type: object
+      required: [id, fullName, username, role, isActive, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        username:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required: [fullName, username, password, role]
+      additionalProperties: false
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9._-]{3,30}$'
+          description: Se guarda en minúsculas; único sin distinguir mayúsculas.
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        role:
+          $ref: '#/components/schemas/Role'
+
+    UpdateUserRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        role:
+          $ref: '#/components/schemas/Role'
+
+    SetPasswordRequest:
+      type: object
+      required: [password]
+      additionalProperties: false
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    SetStatusRequest:
+      type: object
+      required: [isActive]
+      additionalProperties: false
+      properties:
+        isActive:
+          type: boolean
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código estable para el código cliente.
+          enum:
+            - VALIDATION_ERROR
+            - INVALID_CREDENTIALS
+            - ACCOUNT_DISABLED
+            - ACCOUNT_LOCKED
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - CSRF_HEADER_MISSING
+            - NOT_FOUND
+            - USERNAME_TAKEN
+            - LAST_ADMIN
+            - CANNOT_DISABLE_SELF
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Mensaje en español para mostrar al usuario.
+        details:
+          type: object
+          additionalProperties: true
+          description: |
+            Datos adicionales. En VALIDATION_ERROR, un objeto campo → mensaje en español.
+
+  responses:
+    ValidationError:
+      description: Datos inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VALIDATION_ERROR
+            message: Revisa los datos ingresados
+            details:
+              password: La contraseña debe tener al menos 8 caracteres
+    Unauthenticated:
+      description: Sin sesión válida (inexistente, cerrada, revocada o expirada).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHENTICATED
+            message: Tu sesión terminó. Vuelve a iniciar sesión.
+    Forbidden:
+      description: El rol del usuario no permite esta operación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: No tienes permiso para realizar esta acción
+    NotFound:
+      description: El usuario no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: El usuario no existe
+    LastAdmin:
+      description: La operación dejaría el sistema sin administradores activos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: LAST_ADMIN
+            message: Debe existir al menos un administrador activo
+
+security:
+  - sessionCookie: []
