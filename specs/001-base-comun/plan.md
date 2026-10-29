@@ -1,8 +1,8 @@
 # Implementation Plan: Base común — inicio de sesión, roles y gestión de usuarios
 
-**Branch**: `001-auth-roles` (sin rama propia; el trabajo se hace en `main`) | **Date**: 2026-10-28 | **Spec**: [spec.md](spec.md)
+**Branch**: `001-base-comun` | **Date**: 2026-10-28 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/001-auth-roles/spec.md`
+**Input**: Feature specification from `/specs/001-base-comun/spec.md`
 
 **Note**: This template is filled in by the `/speckit-plan` command; its definition describes the execution workflow.
 
@@ -160,7 +160,7 @@ porque el usuario y su rol son el núcleo de ese dominio.
 ### Documentation (this feature)
 
 ```text
-specs/001-auth-roles/
+specs/001-base-comun/
 ├── plan.md              # Este archivo
 ├── research.md          # Phase 0: decisiones técnicas
 ├── data-model.md        # Phase 1: modelo general (ER) y entidades de la feature

@@ -15,21 +15,22 @@ para el usuario se traducen en la interfaz (Principio III).
 
 ## 1. Modelo general del sistema
 
-> Las entidades marcadas como **provisionales** solo fijan la estructura general y sus
-> relaciones. Sus campos definitivos se precisarán en la especificación y el plan de la feature
-> que las implemente (menú, pedidos, cocina, caja). Solo `User` y `Session` se implementan en
-> esta feature.
+> Solo `USER` y `SESSION` se definen aquí, con sus campos, porque son las únicas entidades que
+> implementa esta feature. Las demás aparecen **sin campos ni estados**: el diagrama solo
+> muestra que existen y cómo se relacionan. Sus campos, estados, cardinalidades exactas y
+> entidades adicionales (por ejemplo, para el envío a cocina o la anulación parcial) los
+> define el `data-model.md` de la feature dueña, que prevalece sobre este diagrama.
 
 ```mermaid
 erDiagram
     USER ||--o{ SESSION : "inicia"
-    USER ||--o{ ORDER : "registra (mozo)"
-    USER ||--o{ BILL : "emite (cajero)"
+    USER ||--o{ ORDER : "atiende (mozo)"
+    USER ||--o{ BILL : "cobra (cajero)"
     MENU_CATEGORY ||--o{ MENU_ITEM : "agrupa"
     DINING_TABLE ||--o{ ORDER : "recibe"
     ORDER ||--|{ ORDER_ITEM : "contiene"
     MENU_ITEM ||--o{ ORDER_ITEM : "se pide como"
-    ORDER ||--o| BILL : "se cobra con"
+    ORDER ||--o{ BILL : "se cobra con"
     BILL ||--|{ PAYMENT : "se paga con"
 
     USER {
@@ -54,85 +55,22 @@ erDiagram
         datetime revokedAt "nullable"
         string userAgent "nullable"
     }
-
-    MENU_CATEGORY {
-        uuid id PK "provisional"
-        string name
-        int sortOrder
-        boolean isActive
-    }
-
-    MENU_ITEM {
-        uuid id PK "provisional"
-        uuid categoryId FK
-        string name
-        string description "nullable"
-        decimal price "soles, 2 decimales"
-        boolean isAvailable
-    }
-
-    DINING_TABLE {
-        uuid id PK "provisional"
-        int number UK
-        int capacity
-        boolean isActive
-    }
-
-    ORDER {
-        uuid id PK "provisional"
-        uuid tableId FK
-        uuid waiterId FK "USER con rol WAITER o ADMIN"
-        enum status "OPEN | SENT | READY | SERVED | PAID | CANCELLED"
-        string notes "nullable"
-        datetime createdAt
-        datetime updatedAt
-    }
-
-    ORDER_ITEM {
-        uuid id PK "provisional"
-        uuid orderId FK
-        uuid menuItemId FK
-        int quantity
-        decimal unitPrice "precio al momento del pedido"
-        string notes "nullable"
-        enum status "PENDING | PREPARING | READY | SERVED | CANCELLED"
-    }
-
-    BILL {
-        uuid id PK "provisional"
-        uuid orderId FK, UK
-        uuid cashierId FK "USER con rol CASHIER o ADMIN"
-        decimal total
-        enum status "OPEN | PAID | VOID"
-        datetime issuedAt
-    }
-
-    PAYMENT {
-        uuid id PK "provisional"
-        uuid billId FK
-        enum method "CASH | CARD | DIGITAL_WALLET"
-        decimal amount
-        datetime paidAt
-    }
 ```
 
-### Correspondencia con los módulos del backend
+### Correspondencia con módulos y features
 
-| Módulo | Entidades que posee | Notas |
-|--------|--------------------|-------|
-| `auth` | `USER`, `SESSION` | Incluye la gestión de usuarios del administrador. **Esta feature.** |
-| `menu` | `MENU_CATEGORY`, `MENU_ITEM` | Carta y disponibilidad de platos. |
-| `orders` | `DINING_TABLE`, `ORDER`, `ORDER_ITEM` | Toma de pedidos del mozo. |
-| `kitchen` | — (opera sobre `ORDER_ITEM.status`) | Vista de cocina; cambia el estado de preparación y notifica por Socket.IO. |
-| `billing` | `BILL`, `PAYMENT` | Cobro en caja. |
+| Entidad | Nombre en el dominio | Módulo backend | Feature dueña |
+|---------|----------------------|----------------|---------------|
+| `USER`, `SESSION` | Usuario, sesión | `auth` | `001-base-comun` (**esta feature**) |
+| `MENU_CATEGORY`, `MENU_ITEM` | Categoría, plato de la carta | `menu` | `002` carta |
+| `DINING_TABLE`, `ORDER`, `ORDER_ITEM` | Mesa, pedido, ítem del pedido | `orders` | `003-mesas-pedidos` |
+| — (estados de preparación de los ítems) | Comanda en cocina | `kitchen` | `004-cocina` |
+| `BILL`, `PAYMENT` | Cuenta, pago | `billing` | `005` caja |
 
-**Decisiones del modelo general**:
-
-- `ORDER_ITEM.unitPrice` copia el precio del plato al momento del pedido, para que un cambio de
-  precio en la carta no altere pedidos ya registrados.
-- Los usuarios nunca se eliminan (FR-018): `ORDER.waiterId` y `BILL.cashierId` siempre apuntan
-  a un usuario existente, aunque esté inactivo.
-- Los montos usan `decimal` con 2 decimales, nunca coma flotante.
+**Lo que esta feature fija para las demás**: los usuarios nunca se eliminan, solo se
+desactivan (FR-018). Toda referencia a un usuario desde otras entidades (el mozo de un pedido,
+el administrador que autoriza una anulación, el cajero que cobra) apunta siempre a un usuario
+existente, aunque esté inactivo.
 
 ## 2. Entidades de esta feature
 

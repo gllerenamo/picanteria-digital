@@ -1,6 +1,6 @@
 # Feature Specification: Base común: inicio de sesión, roles y gestión de usuarios
 
-**Feature Branch**: `main` (no hay hook de ramas configurado; se trabaja en la rama principal)
+**Feature Branch**: `001-base-comun`
 
 **Created**: 2026-10-28
 

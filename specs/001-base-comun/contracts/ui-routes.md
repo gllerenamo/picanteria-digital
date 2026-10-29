@@ -1,6 +1,6 @@
 # Contrato de pantallas y acceso por rol
 
-**Feature**: 001-auth-roles
+**Feature**: 001-base-comun
 
 Esta matriz es la fuente única que usan el menú del frontend, la protección de rutas
 (`RequireRole`) y las pruebas de aceptación. Se implementa en

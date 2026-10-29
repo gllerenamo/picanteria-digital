@@ -1,6 +1,6 @@
 # Contrato de tiempo real (Socket.IO)
 
-**Feature**: 001-auth-roles | **Módulo backend**: `realtime` (infraestructura compartida)
+**Feature**: 001-base-comun | **Módulo backend**: `realtime` (infraestructura compartida)
 
 ## Conexión
 

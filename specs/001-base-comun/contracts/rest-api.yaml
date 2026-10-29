@@ -3,7 +3,7 @@ info:
   title: Picantería Digital — API de autenticación y usuarios
   version: 1.0.0
   description: |
-    Contrato HTTP de la feature 001-auth-roles (módulo `auth` del backend).
+    Contrato HTTP de la feature 001-base-comun (módulo `auth` del backend).
 
     - Todas las rutas cuelgan de `/api` y se sirven desde el mismo origen que el frontend.
     - La sesión viaja en la cookie `sid` (HttpOnly, SameSite=Strict, Secure en producción,

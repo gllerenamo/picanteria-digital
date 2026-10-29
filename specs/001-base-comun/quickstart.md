@@ -1,4 +1,4 @@
-# Quickstart: validar la feature 001-auth-roles
+# Quickstart: validar la feature 001-base-comun
 
 **Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 
