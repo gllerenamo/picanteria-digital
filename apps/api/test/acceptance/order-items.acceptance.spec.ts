@@ -133,4 +133,44 @@ describe('Feature 003 — US2: tomar el pedido (y consumo de US6)', () => {
     expect(items[0]).toMatchObject({ status: 'DRAFT', quantity: 2, notes: 'sin ají' });
   });
 
+  it('[003] AC-6.2: el consumo muestra cantidad vigente, precio, subtotal y total en soles', async () => {
+    const { order, table } = await createOpenOrder(prisma, juan.id);
+    const rocoto = await createMenuItem(prisma, { price: 28 });
+    const chicha = await createMenuItem(prisma, { price: 10 });
+    const dispatch = await createDispatch(prisma, order.id, juan.id);
+    await createSentItem(prisma, dispatch, rocoto, { quantity: 2 });
+    await createSentItem(prisma, dispatch, chicha, { quantity: 3, voidedQuantity: 1 });
+    await createSentItem(prisma, dispatch, chicha, { quantity: 1, voidedQuantity: 1, status: 'VOIDED' });
+
+    for (const status of ['OCUPADA', 'POR_COBRAR'] as const) {
+      await prisma.diningTable.update({ where: { id: table.id }, data: { status } });
+      const { items, consumption } = await detail(order.id);
+      expect(consumption.total.formatted).toBe('S/ 76.00');
+      expect(items.filter((item) => item.status !== 'VOIDED').map((item) => [item.activeQuantity, item.unitPrice?.formatted, item.subtotal?.formatted])).toEqual([
+        [2, 'S/ 28.00', 'S/ 56.00'],
+        [2, 'S/ 10.00', 'S/ 20.00'],
+      ]);
+    }
+  });
+
+  it('[003] AC-6.7: agregar con la mesa por cobrar exige confirmar y la devuelve a ocupada', async () => {
+    const { order, table } = await createOpenOrder(prisma, juan.id, { tableStatus: 'POR_COBRAR' });
+    const chicha = await createMenuItem(prisma);
+
+    const body: unknown = (
+      await juanAgent.post(`/api/orders/${order.id}/items`).send({ menuItemId: chicha.id, quantity: 1 }).expect(409)
+    ).body;
+    expect(body).toMatchObject({ code: 'TABLE_AWAITING_PAYMENT' });
+
+    await juanAgent
+      .post(`/api/orders/${order.id}/items`)
+      .send({ menuItemId: chicha.id, quantity: 1, confirmReopen: true })
+      .expect(201);
+
+    expect((await prisma.diningTable.findUniqueOrThrow({ where: { id: table.id } })).status).toBe('OCUPADA');
+    const reopened = await detail(order.id);
+    expect(reopened.table.status).toBe('OCUPADA');
+    // Para cobrarla hay que pedir la cuenta otra vez (y antes enviar lo nuevo).
+    expect(reopened.canRequestBill).toBe(false);
+  });
 });

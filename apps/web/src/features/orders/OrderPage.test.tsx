@@ -252,4 +252,138 @@ describe('Feature 003 — pedido de una mesa (/mozo/pedidos/:orderId)', () => {
     expect(keys[1]).toBe(keys[0]);
   });
 
+  it('[003] AC-4.1: lo enviado se agrupa por ronda con su estado, aparte de lo que falta enviar', async () => {
+    renderOrder(
+      orderDetail({
+        dispatches: [DISPATCH],
+        items: [
+          item({ menuItem: { id: ROCOTO.id, name: 'Chicha de Guiñapo' } }),
+          sent({ status: 'PENDING' }),
+          sent({ status: 'PREPARING', menuItem: { id: ROCOTO.id, name: 'Adobo' } }),
+          sent({ status: 'READY', menuItem: { id: ROCOTO.id, name: 'Chupe' } }),
+          sent({
+            status: 'VOIDED',
+            voidedQuantity: 1,
+            activeQuantity: 0,
+            menuItem: { id: ROCOTO.id, name: 'Ocopa' },
+            voids: [{ id: 'ffff0000-0000-4000-8000-000000000001', units: 1, reason: 'Pedido por error', voidedBy: ROSA, voidedAt: '2026-10-29T17:50:00.000Z' }],
+          }),
+        ],
+      }),
+    );
+
+    const enviado = await screen.findByRole('region', { name: 'Enviado' });
+    expect(within(enviado).getByText(/Ronda 1/)).toBeInTheDocument();
+    for (const label of ['Pendiente', 'En preparación', 'Listo', 'Anulado']) {
+      expect(within(enviado).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(enviado).getByText('1 anulada: Pedido por error')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Por enviar' })).getByText('Chicha de Guiñapo')).toBeInTheDocument();
+  });
+
+  it('[003] AC-4.2: cuando cocina cambia un estado, el mozo lo ve sin recargar', async () => {
+    let current = orderDetail({ dispatches: [DISPATCH], items: [sent({ status: 'PENDING' })] });
+    const { realtime } = renderOrder(() => current);
+    const enviado = await screen.findByRole('region', { name: 'Enviado' });
+    expect(within(enviado).getByText('Pendiente')).toBeInTheDocument();
+
+    current = orderDetail({ dispatches: [DISPATCH], items: [{ ...current.items[0]!, status: 'PREPARING' }] });
+    realtime.emit('kitchen:item-status-changed', {
+      orderItemId: current.items[0]!.id,
+      dispatchId: DISPATCH.id,
+      tableNumber: 2,
+      status: 'PREPARING',
+      previousStatus: 'PENDING',
+      isUndo: false,
+      changedAt: '2026-10-29T17:50:00.000Z',
+    });
+
+    expect(await screen.findByText('En preparación')).toBeInTheDocument();
+  });
+
+  it('[003] AC-5.3: el administrador debe escribir el motivo para anular', async () => {
+    const { user } = renderOrder(orderDetail({ dispatches: [DISPATCH], items: [sent({ quantity: 2 })] }), 'ADMIN');
+
+    await user.click(await screen.findByRole('button', { name: 'Anular' }));
+    const dialog = screen.getByRole('dialog', { name: 'Anular Rocoto Relleno' });
+    expect(within(dialog).getByText('2 de 2')).toBeInTheDocument();
+    const confirm = within(dialog).getByRole('button', { name: 'Anular' });
+    expect(confirm).toBeDisabled();
+
+    await user.type(within(dialog).getByLabelText('Motivo (obligatorio)'), 'ab');
+    expect(confirm).toBeDisabled();
+    await user.type(within(dialog).getByLabelText('Motivo (obligatorio)'), 'c');
+    expect(confirm).toBeEnabled();
+  });
+
+  it('[003] AC-5.3: un mozo no ve la acción de anular', async () => {
+    renderOrder(orderDetail({ dispatches: [DISPATCH], items: [sent()] }), 'WAITER');
+
+    await screen.findByRole('region', { name: 'Enviado' });
+    expect(screen.queryByRole('button', { name: 'Anular' })).not.toBeInTheDocument();
+  });
+
+  it('[003] AC-6.2: el consumo muestra cantidades, precio, subtotal y total en soles', async () => {
+    renderOrder(
+      orderDetail({
+        dispatches: [DISPATCH],
+        items: [sent({ quantity: 2 }), sent({ status: 'VOIDED', voidedQuantity: 1, activeQuantity: 0 })],
+        consumption: { total: money(56) },
+      }),
+    );
+
+    const consumo = await screen.findByRole('region', { name: 'Consumo' });
+    expect(within(consumo).getByText('2 × Rocoto Relleno')).toBeInTheDocument();
+    expect(within(consumo).getByText('S/ 28.00')).toBeInTheDocument();
+    expect(within(consumo).getAllByText('S/ 56.00')).toHaveLength(2);
+  });
+
+  it('[003] AC-6.3: con ítems por enviar, pedir la cuenta muestra el aviso', async () => {
+    const { user } = renderOrder(orderDetail({ dispatches: [DISPATCH], items: [sent(), item()] }));
+    server.use(
+      http.post(`*/api/orders/${ORDER_ID}/request-bill`, () =>
+        apiError(409, {
+          code: 'HAS_UNSENT_ITEMS',
+          message: 'Hay ítems sin enviar. Envíalos o quítalos antes de pedir la cuenta.',
+        }),
+      ),
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Pedir la cuenta' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Pedir la cuenta' })).getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByText('Hay ítems sin enviar. Envíalos o quítalos antes de pedir la cuenta.')).toBeInTheDocument();
+  });
+
+  it('[003] AC-6.7: agregar con la mesa por cobrar pide confirmar y vuelve a enviar con confirmReopen', async () => {
+    const bodies: unknown[] = [];
+    const { user } = renderOrder(
+      orderDetail({ table: { ...orderDetail().table, status: 'POR_COBRAR' }, dispatches: [DISPATCH], items: [sent()] }),
+    );
+    server.use(
+      http.post(`*/api/orders/${ORDER_ID}/items`, async ({ request }) => {
+        bodies.push(await request.json());
+        if (bodies.length === 1) {
+          return apiError(409, {
+            code: 'TABLE_AWAITING_PAYMENT',
+            message: 'La mesa está por cobrar. Confirma para volver a abrirla y agregar.',
+          });
+        }
+        return HttpResponse.json(item(), { status: 201 });
+      }),
+    );
+
+    const carta = await screen.findByRole('region', { name: 'Carta' });
+    await user.click(await within(carta).findByRole('button', { name: /Rocoto Relleno/ }));
+    await user.click(screen.getByRole('button', { name: 'Agregar' }));
+    expect(await screen.findByText('La mesa está por cobrar. ¿Volver a abrirla para agregar?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pedir la cuenta' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }));
+    await waitFor(() => {
+      expect(bodies).toHaveLength(2);
+    });
+    expect(bodies[0]).toMatchObject({ menuItemId: ROCOTO.id, confirmReopen: false });
+    expect(bodies[1]).toMatchObject({ menuItemId: ROCOTO.id, confirmReopen: true });
+  });
 });

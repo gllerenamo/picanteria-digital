@@ -234,7 +234,7 @@ ve cada cambio sin recargar. Los avisos los prueba la 004 (AC-3.1, AC-3.3 y AC-3
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T044 [P] [US4] Agregar a `OrderPage.test.tsx`:
+- [X] T044 [P] [US4] Agregar a `OrderPage.test.tsx`:
   - `[003] AC-4.1`: los ítems enviados se agrupan por ronda ("Ronda 1 · 12:40", hora `es-PE`), con el texto "Pendiente", "En preparación", "Listo" o "Anulado", separados de "Por enviar".
   - `[003] AC-4.2`: un `kitchen:item-status-changed` simulado hace volver a pedir el pedido y el ítem pasa a "En preparación".
 - [ ] T045 [US4] Pedir al dueño de la 004 que su prueba de AC-3.1 en `apps/web/e2e/kitchen.spec.ts` muestre el aviso también en una pantalla distinta de `/mozo` (por ejemplo `/mozo/pedidos/:orderId`), para cubrir el "en cualquier pantalla" de FR-027 ([research.md §17](research.md), P8)
@@ -257,7 +257,7 @@ evento, el mozo ve el ítem anulado y el consumo baja.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T047 [P] [US5] Escribir en `apps/api/test/acceptance/voids.acceptance.spec.ts`:
+- [X] T047 [P] [US5] Escribir en `apps/api/test/acceptance/voids.acceptance.spec.ts`:
   - `[003] AC-5.1`: un ADMIN anula un ítem `PENDING` (y otro `PREPARING`) completo con motivo; responde 201, el ítem queda `VOIDED` y se crea un `ItemVoid` con `voidedById`, `voidedAt` y `reason`.
   - `[003] AC-5.3`: sin `reason`, o con un motivo de 2 caracteres, responde 400 y nada cambia.
   - `[003] AC-5.4`: un ítem `READY` responde 409 `ITEM_NOT_VOIDABLE` con `details.reason: 'READY'` y el mensaje "El plato ya está listo; no se puede anular". Además: `VOIDED` da `reason: 'VOIDED'`, `DRAFT` da `'NOT_SENT'` y pedir más unidades de las que quedan da `'NOT_ENOUGH_UNITS'` con `remainingQuantity`.
@@ -265,8 +265,8 @@ evento, el mozo ve el ítem anulado y el consumo baja.
   - `[003] AC-5.6`: en `GET /api/orders/:id` el ítem aparece `VOIDED` y no suma al consumo.
   - `[003] AC-5.7`: anular 1 de 3 deja `voidedQuantity: 1`, el estado sin cambiar, `activeQuantity: 2` y un consumo de 2 × precio; anular las otras 2 lo deja `VOIDED`.
   - Caso sin ID: una anulación y un cambio a `READY` simultáneos (con `UPDATE … WHERE status = 'PREPARING'` en la prueba) terminan en un estado coherente: o anulado o listo, nunca las dos cosas.
-- [ ] T048 [P] [US5] Agregar a `orders-realtime.acceptance.spec.ts`: `[003] AC-5.2` (un socket de cocina recibe `orders:item-voided` con `units`, `remainingQuantity`, `tableNumber` y `dispatchId` en menos de 3 s)
-- [ ] T049 [P] [US5] Agregar a `OrderPage.test.tsx`: `[003] AC-5.3` ("Anular" solo aparece para ADMIN en ítems pendientes o en preparación; el diálogo propone todas las unidades restantes y "Anular" queda deshabilitado hasta tener un motivo de al menos 3 caracteres)
+- [X] T048 [P] [US5] Agregar a `orders-realtime.acceptance.spec.ts`: `[003] AC-5.2` (un socket de cocina recibe `orders:item-voided` con `units`, `remainingQuantity`, `tableNumber` y `dispatchId` en menos de 3 s)
+- [X] T049 [P] [US5] Agregar a `OrderPage.test.tsx`: `[003] AC-5.3` ("Anular" solo aparece para ADMIN en ítems pendientes o en preparación; el diálogo propone todas las unidades restantes y "Anular" queda deshabilitado hasta tener un motivo de al menos 3 caracteres)
 
 ### Implementation for User Story 5
 
@@ -293,19 +293,19 @@ para mozos y caja, ningún mozo puede liberarla y, al agregar algo, vuelve a ocu
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T053 [P] [US6] Agregar a `orders-tables.acceptance.spec.ts`:
+- [X] T053 [P] [US6] Agregar a `orders-tables.acceptance.spec.ts`:
   - `[003] AC-6.1`: `POST /api/orders/:id/request-bill` responde 200 y la mesa queda `POR_COBRAR`.
   - `[003] AC-6.3`: con borradores, 409 `HAS_UNSENT_ITEMS`.
   - `[003] AC-6.4`: sin envíos, 409 `NO_CONSUMPTION`; con todo anulado, también.
   - `[003] AC-6.6` (datos): tras `simulateCashierPayment`, `GET /api/orders/tables` muestra la mesa `LIBRE` con `order: null` y se puede abrir de nuevo.
   - Caso sin ID: pedir la cuenta dos veces da 409 `TABLE_STATE_CONFLICT`.
-- [ ] T054 [P] [US6] Agregar a `order-items.acceptance.spec.ts`:
+- [X] T054 [P] [US6] Agregar a `order-items.acceptance.spec.ts`:
   - `[003] AC-6.2`: `GET /api/orders/:id` trae `consumption.total` y, por ítem enviado, `activeQuantity`, `unitPrice` y `subtotal` con formato "S/ …", con la mesa `OCUPADA` y con la mesa `POR_COBRAR`.
   - `[003] AC-6.7`: agregar con la mesa `POR_COBRAR` sin `confirmReopen` da 409 `TABLE_AWAITING_PAYMENT`; con `confirmReopen: true` da 201, la mesa queda `OCUPADA` y hay que pedir la cuenta otra vez.
-- [ ] T055 [P] [US6] Agregar a `orders-realtime.acceptance.spec.ts`:
+- [X] T055 [P] [US6] Agregar a `orders-realtime.acceptance.spec.ts`:
   - `[003] AC-6.1`: los sockets de mozo y de cajero reciben `orders:table-status-changed` con `status: 'POR_COBRAR'` (SC-004).
   - `[003] AC-6.6` (tiempo real): tras `simulateCashierPayment`, el socket de un mozo recibe `orders:table-status-changed` con `status: 'LIBRE'` en menos de 3 s. Esta prueba fija lo que la 005 debe hacer al cobrar.
-- [ ] T056 [P] [US6] Agregar a `TablesBoardPage.test.tsx` `[003] AC-6.5` (una mesa "Por cobrar" no ofrece ninguna acción para liberarla) y a `OrderPage.test.tsx`:
+- [X] T056 [P] [US6] Agregar a `TablesBoardPage.test.tsx` `[003] AC-6.5` (una mesa "Por cobrar" no ofrece ninguna acción para liberarla) y a `OrderPage.test.tsx`:
   - `[003] AC-6.2`: el resumen de consumo muestra cantidades, precio, subtotales y el total en soles.
   - `[003] AC-6.3`: un 409 `HAS_UNSENT_ITEMS` muestra "Hay ítems sin enviar. Envíalos o quítalos antes de pedir la cuenta."
   - `[003] AC-6.7`: agregar con la mesa por cobrar muestra "La mesa está por cobrar. ¿Volver a abrirla para agregar?" y, al confirmar, repite la petición con `confirmReopen: true`.

@@ -96,4 +96,52 @@ describe('Feature 003 — eventos de tiempo real de mesas y pedidos', () => {
     await silent;
   });
 
+  it('[003] AC-5.2: la cocina se entera de la anulación sin recargar', async () => {
+    const waiter = await user('WAITER');
+    const kitchenSocket = await connectAs(url, await user('KITCHEN'), sockets);
+    const { order, table } = await createOpenOrder(prisma, waiter.id);
+    const dispatch = await createDispatch(prisma, order.id, waiter.id);
+    const item = await createSentItem(prisma, dispatch, await createMenuItem(prisma), { quantity: 3 });
+    const received = nextEvent(kitchenSocket, 'orders:item-voided');
+
+    const adminAgent = await asUser(await user('ADMIN'));
+    await adminAgent.post(`/api/order-items/${item.id}/voids`).send({ units: 1, reason: 'Solo quieren dos' }).expect(201);
+
+    await expect(received).resolves.toMatchObject({
+      orderItemId: item.id,
+      dispatchId: dispatch.id,
+      tableNumber: table.tableNumber,
+      units: 1,
+      remainingQuantity: 2,
+    });
+  });
+
+  it('[003] AC-6.1: los mozos y caja ven la mesa por cobrar sin recargar (SC-004)', async () => {
+    const juan = await user('WAITER');
+    const rosaSocket = await connectAs(url, await user('WAITER'), sockets);
+    const cashierSocket = await connectAs(url, await user('CASHIER'), sockets);
+    const { order, table } = await createOpenOrder(prisma, juan.id);
+    await createSentItem(prisma, await createDispatch(prisma, order.id, juan.id), await createMenuItem(prisma));
+    const rosaEvent = nextEvent(rosaSocket, 'orders:table-status-changed');
+    const cashierEvent = nextEvent(cashierSocket, 'orders:table-status-changed');
+
+    await (await asUser(juan)).post(`/api/orders/${order.id}/request-bill`).expect(200);
+
+    const expected = { tableId: table.id, status: 'POR_COBRAR', orderId: order.id };
+    await expect(rosaEvent).resolves.toMatchObject(expected);
+    await expect(cashierEvent).resolves.toMatchObject(expected);
+  });
+
+  it('[003] AC-6.6 (tiempo real): cuando Caja cobra, los mozos ven la mesa libre sin recargar', async () => {
+    const juan = await user('WAITER');
+    const rosaSocket = await connectAs(url, await user('WAITER'), sockets);
+    const { order, table } = await createOpenOrder(prisma, juan.id, { tableStatus: 'POR_COBRAR' });
+    await createSentItem(prisma, await createDispatch(prisma, order.id, juan.id), await createMenuItem(prisma));
+    const received = nextEvent(rosaSocket, 'orders:table-status-changed');
+
+    // Lo que hará Caja (005) al cobrar; su prueba de cobro reemplazará a este sustituto.
+    await simulateCashierPayment(app, prisma, order.id);
+
+    await expect(received).resolves.toMatchObject({ tableId: table.id, status: 'LIBRE', orderId: order.id });
+  });
 });
