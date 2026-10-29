@@ -55,4 +55,4 @@ jobs:
 
       - name: Principio II — Cada criterio de aceptación tiene su prueba
         # Agrega aquí el número de cada feature cuando empiece su implementación.
-        run: npm run check:ac -- 001
+        run: npm run check:ac -- 001 002
