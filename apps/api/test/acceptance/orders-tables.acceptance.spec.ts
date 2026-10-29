@@ -6,9 +6,17 @@ import type { PrismaService } from '../../src/prisma/prisma.service';
 import { createTestApp, prismaOf } from '../helpers/app';
 import { resetDb } from '../helpers/db';
 import { createUser, loginAs } from '../helpers/factories';
-import { createDispatch, createOpenOrder, createTable } from '../helpers/order-factories';
+import {
+  createDispatch,
+  createDraftItem,
+  createMenuItem,
+  createOpenOrder,
+  createSentItem,
+  createTable,
+  simulateCashierPayment,
+} from '../helpers/order-factories';
 
-describe('Feature 003 — US1: ver las mesas y abrir una mesa libre', () => {
+describe('Feature 003 — US1 y US6: mesas, apertura y cuenta', () => {
   let app: NestExpressApplication;
   let prisma: PrismaService;
   let juan: User & { password: string };
@@ -133,5 +141,67 @@ describe('Feature 003 — US1: ver las mesas y abrir una mesa libre', () => {
     const cashier = await createUser(prisma, { role: 'CASHIER' });
     await (await loginAs(app, kitchen)).get('/api/orders/tables').expect(403);
     await (await loginAs(app, cashier)).get('/api/orders/tables').expect(200);
+  });
+
+  /** Pedido con un ítem enviado, listo para pedir la cuenta. */
+  const orderWithConsumption = async () => {
+    const { order, table } = await createOpenOrder(prisma, juan.id);
+    const menuItem = await createMenuItem(prisma);
+    const dispatch = await createDispatch(prisma, order.id, juan.id);
+    const item = await createSentItem(prisma, dispatch, menuItem);
+    return { order, table, menuItem, item };
+  };
+  const tableStatus = async (tableId: string) => (await prisma.diningTable.findUniqueOrThrow({ where: { id: tableId } })).status;
+
+  it('[003] AC-6.1: pedir la cuenta pasa la mesa a por cobrar', async () => {
+    const { order, table } = await orderWithConsumption();
+
+    const detail = (await rosaAgent.post(`/api/orders/${order.id}/request-bill`).expect(200)).body as OrderDetail;
+
+    expect(detail.table.status).toBe('POR_COBRAR');
+    expect(await tableStatus(table.id)).toBe('POR_COBRAR');
+  });
+
+  it('[003] AC-6.3: con ítems por enviar, se pide enviarlos o quitarlos antes', async () => {
+    const { order, table, menuItem } = await orderWithConsumption();
+    await createDraftItem(prisma, order.id, menuItem.id);
+
+    const body: unknown = (await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(409)).body;
+
+    expect(body).toMatchObject({
+      code: 'HAS_UNSENT_ITEMS',
+      message: 'Hay ítems sin enviar. Envíalos o quítalos antes de pedir la cuenta.',
+    });
+    expect(await tableStatus(table.id)).toBe('OCUPADA');
+  });
+
+  it('[003] AC-6.4: sin nada enviado, o con todo anulado, la mesa no tiene consumo', async () => {
+    const { order: empty } = await createOpenOrder(prisma, juan.id);
+    const emptyBody: unknown = (await juanAgent.post(`/api/orders/${empty.id}/request-bill`).expect(409)).body;
+    expect(emptyBody).toMatchObject({ code: 'NO_CONSUMPTION' });
+
+    const { order, item } = await orderWithConsumption();
+    await prisma.orderItem.update({ where: { id: item.id }, data: { status: 'VOIDED', voidedQuantity: 1 } });
+    const voidedBody: unknown = (await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(409)).body;
+    expect(voidedBody).toMatchObject({ code: 'NO_CONSUMPTION' });
+  });
+
+  it('[003] AC-6.6 (datos): cuando Caja cobra, la mesa queda libre y lista para otra atención', async () => {
+    const { order, table } = await orderWithConsumption();
+    await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(200);
+
+    await simulateCashierPayment(app, prisma, order.id);
+
+    const tables = (await rosaAgent.get('/api/orders/tables').expect(200)).body as TableOverview[];
+    expect(tables.find((t) => t.id === table.id)).toMatchObject({ status: 'LIBRE', order: null });
+    await rosaAgent.post('/api/orders').send({ tableId: table.id }).expect(201);
+  });
+
+  it('pedir la cuenta dos veces responde que la mesa cambió de estado', async () => {
+    const { order } = await orderWithConsumption();
+    await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(200);
+
+    const body: unknown = (await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(409)).body;
+    expect(body).toMatchObject({ code: 'TABLE_STATE_CONFLICT', details: { current: 'POR_COBRAR' } });
   });
 });

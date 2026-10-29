@@ -103,6 +103,10 @@ export class DispatchesService {
         round,
         idempotencyKey,
         sentById: viewer.id,
+        // Hora tomada con el bloqueo ya adquirido. El valor por defecto `now()` de PostgreSQL es
+        // la hora de inicio de la transacción: un envío que esperó el bloqueo quedaría con un
+        // número mayor y una hora menor que el anterior (AC-3.6).
+        sentAt: new Date(),
       },
     });
 

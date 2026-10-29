@@ -69,6 +69,15 @@ describe('Feature 003 — tablero de mesas (/mozo)', () => {
     });
   });
 
+  it('[003] AC-6.5: una mesa por cobrar no ofrece ninguna acción para liberarla', async () => {
+    mockTablesBoard(sampleTables());
+    renderBoard();
+
+    expect(await card(3)).toHaveTextContent('Por cobrar');
+    expect(screen.queryByRole('button', { name: /liberar/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/liberar/i)).not.toBeInTheDocument();
+  });
+
   it('[003] AC-1.5: si otro mozo la abrió primero, se muestra quién y se actualiza el tablero', async () => {
     let calls = 0;
     mockTablesBoard(() => {

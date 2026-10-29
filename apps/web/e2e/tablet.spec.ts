@@ -50,3 +50,39 @@ test.describe('Principio IV — Pantallas para tablet', () => {
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(18);
   });
 });
+
+// 003-mesas-pedidos: la pantalla del pedido también se usa en tablet (Principio IV, T061).
+test.describe('Principio IV — Pedido de una mesa', () => {
+  test('SC-006: /mozo/pedidos/:orderId no tiene desplazamiento horizontal y sus controles miden al menos 44×44 px', async ({
+    page,
+  }) => {
+    await loginAs(page, 'mozo');
+    await page.goto('/mozo');
+    await page.getByRole('button', { name: /^Mesa 7(?!\d)/ }).click();
+    await page.getByRole('button', { name: 'Abrir mesa' }).click();
+    await expect(page).toHaveURL(/\/mozo\/pedidos\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole('region', { name: 'Carta' }).getByRole('button').first()).toBeVisible();
+
+    const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
+
+    const tooSmall = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('main button, main a, main input, main select, main textarea'))
+        .filter((element) => {
+          const box = element.getBoundingClientRect();
+          const visible = box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+          return visible && (box.width < 44 || box.height < 44);
+        })
+        .map((element) => element.outerHTML.slice(0, 120)),
+    );
+    expect(tooSmall).toEqual([]);
+
+    // Deja la mesa libre para la siguiente corrida.
+    await page.getByRole('button', { name: 'Cancelar apertura' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page).toHaveURL(/\/mozo$/);
+  });
+});
