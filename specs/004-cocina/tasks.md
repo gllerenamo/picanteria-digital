@@ -186,10 +186,10 @@ verifica la comanda, el aviso y la confirmación.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T051 [P] Verificación de tablet (Principio IV): `/cocina` sin desplazamiento horizontal en 768×1024 y 1366×1024 y botones de al menos 44×44 px. La cubre `apps/web/e2e/tablet.spec.ts` de la 001, que ya recorre `/cocina` y ahora prueba la pantalla real
+- [X] T051 [P] Verificación de tablet (Principio IV): `/cocina` sin desplazamiento horizontal en 768×1024 y 1366×1024 y botones de al menos 44×44 px. La cubre `apps/web/e2e/tablet.spec.ts` de la 001, que ya recorre `/cocina` y ahora prueba la pantalla real
 - [X] T052 [P] Revisar que todos los textos nuevos estén en español y que las horas usen `es-PE` (Principio III)
-- [ ] T053 Ejecutar `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` y `npm run check:ac -- 004` (resultado esperado: 28/28)
-- [ ] T054 Recorrer la validación manual de [quickstart.md](quickstart.md) y guardar capturas para el informe (sección 5.3)
+- [X] T053 Ejecutar `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` y `npm run check:ac -- 004` (resultado esperado: 28/28)
+- [X] T054 Recorrer la validación manual de [quickstart.md](quickstart.md) y guardar capturas para el informe (sección 5.3)
 - [ ] T055 Abrir el PR de `004-cocina` hacia `main` con la lista de comprobación de puertas de calidad y asignar la revisión al responsable de la 003
 
 ---

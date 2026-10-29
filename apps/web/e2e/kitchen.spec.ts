@@ -6,6 +6,8 @@ import { loginAs, type E2eLoginKey } from './helpers/auth';
 // su propia sesión, sobre una mesa libre; la semilla e2e borra esos pedidos en la siguiente corrida.
 
 const CSRF = { 'X-Requested-With': 'picanteria-web' };
+/** Mesas que waiter.spec.ts (003) necesita libres; un envío deja la mesa ocupada hasta el cobro. */
+const RESERVED_TABLES = new Set([8, 9]);
 
 /** Segunda sesión en su propio contexto, con la misma configuración de tablet del proyecto. */
 async function openSession(browser: Browser, testInfo: TestInfo, key: E2eLoginKey): Promise<Page> {
@@ -26,7 +28,7 @@ interface SentRound {
 async function sendRound(waiter: Page): Promise<SentRound> {
   const api = waiter.request;
   const tables = (await (await api.get('/api/orders/tables')).json()) as Array<{ id: string; tableNumber: number; status: string }>;
-  const table = tables.filter((candidate) => candidate.status === 'LIBRE').at(-1);
+  const table = tables.find((candidate) => candidate.status === 'LIBRE' && !RESERVED_TABLES.has(candidate.tableNumber));
   if (!table) throw new Error('No hay mesas libres para la prueba');
 
   const opened = await api.post('/api/orders', { headers: CSRF, data: { tableId: table.id } });
