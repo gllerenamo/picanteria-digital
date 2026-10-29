@@ -1,0 +1,571 @@
+openapi: 3.1.0
+info:
+  title: Picantería Digital — API de mesas y pedidos (003-mesas-pedidos)
+  version: 0.1.0
+  description: |
+    Endpoints del módulo `orders`. Todos van bajo el prefijo global `/api`, requieren sesión
+    (cookie `sid`) y, en las peticiones que modifican datos (POST, PATCH, DELETE), la cabecera
+    `X-Requested-With: picanteria-web` de la 001. `ADMIN` pasa todos los controles de rol
+    (001, FR-011). Los errores siguen el esquema `ApiError` de la 001: `code` estable y
+    `message` en español para mostrar. Todo código nuevo está en `ERROR_CODES` y
+    `ERROR_MESSAGES` de `packages/shared/src/errors.ts`; si no, el cliente lo lee como
+    `INTERNAL_ERROR`.
+
+    Los eventos se emiten después de confirmar la transacción
+    ([websocket-events.md](websocket-events.md)).
+
+    Implementación: la ruta estática `GET /orders/tables` se declara antes que
+    `/orders/{orderId}` en el controlador; si no, el pipe de UUID respondería 404.
+servers:
+  - url: /api
+tags:
+  - name: Mesas
+  - name: Pedido
+  - name: Envío a cocina
+  - name: Anulación
+
+paths:
+  /orders/tables:
+    get:
+      tags: [Mesas]
+      summary: Mesas del local con su estado y su pedido en curso
+      description: |
+        Roles WAITER y CASHIER. Fuente de verdad del tablero `/mozo` (AC-1.1). La lista de mesas
+        sale de `DiningTable` (002); el pedido en curso es la orden `OPEN` de cada mesa.
+      responses:
+        '200':
+          description: Mesas ordenadas por número
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TableOverview' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /orders:
+    post:
+      tags: [Mesas]
+      summary: Abrir una mesa libre
+      description: |
+        Rol WAITER. En una transacción: mesa `LIBRE → OCUPADA` y pedido `OPEN` con el usuario
+        como mozo responsable (FR-002, AC-1.2). De dos aperturas simultáneas solo una gana
+        (FR-003, AC-1.5). Emite `orders:table-status-changed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpenOrderRequest' }
+      responses:
+        '201':
+          description: Mesa abierta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `TABLE_NOT_AVAILABLE`: la mesa ya no está libre (AC-1.4, AC-1.5). Mensaje
+            "La mesa ya la abrió {nombre}" cuando hay un pedido en curso.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              example:
+                code: TABLE_NOT_AVAILABLE
+                message: La mesa ya la abrió Rosa Quispe
+                details: { status: OCUPADA, openedBy: { id: 6f1c…, fullName: Rosa Quispe } }
+
+  /orders/{orderId}:
+    parameters: [{ $ref: '#/components/parameters/OrderId' }]
+    get:
+      tags: [Pedido]
+      summary: Pedido con sus ítems, envíos, anulaciones y consumo
+      description: |
+        Roles WAITER y CASHIER. Fuente de verdad de `/mozo/pedidos/:orderId` (AC-2.7, AC-4.1,
+        AC-6.2). Los ítems `DRAFT` traen el precio actual de la carta y si siguen disponibles.
+      responses:
+        '200':
+          description: Pedido actual
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Pedido]
+      summary: Registrar o cambiar el número de comensales
+      description: Rol WAITER, cualquier mozo (FR-004, AC-1.7).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateOrderRequest' }
+      responses:
+        '200':
+          description: Pedido actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/OrderNotOpen' }
+
+  /orders/{orderId}/items:
+    parameters: [{ $ref: '#/components/parameters/OrderId' }]
+    post:
+      tags: [Pedido]
+      summary: Agregar un ítem por enviar
+      description: |
+        Rol WAITER, cualquier mozo (FR-005). Crea el ítem en `DRAFT` (AC-2.3, AC-2.4). Si la
+        mesa está `POR_COBRAR`, exige `confirmReopen: true` y en la misma transacción la pasa a
+        `OCUPADA` (FR-034, AC-6.7), con lo que emite `orders:table-status-changed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddOrderItemRequest' }
+      responses:
+        '201':
+          description: Ítem agregado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `MENU_ITEM_UNAVAILABLE` (el plato no está disponible, AC-2.2),
+            `TABLE_AWAITING_PAYMENT` (mesa por cobrar sin `confirmReopen`) u `ORDER_NOT_OPEN`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /order-items/{itemId}:
+    parameters: [{ $ref: '#/components/parameters/ItemId' }]
+    patch:
+      tags: [Pedido]
+      summary: Cambiar la cantidad o la nota de un ítem por enviar
+      description: Rol WAITER, sin autorización de nadie (FR-012, AC-2.5).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateOrderItemRequest' }
+      responses:
+        '200':
+          description: Ítem actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ItemAlreadySent' }
+    delete:
+      tags: [Pedido]
+      summary: Quitar un ítem por enviar
+      description: |
+        Rol WAITER. La pantalla pide confirmación antes de llamar (FR-012, AC-2.6). El ítem se
+        borra porque nunca llegó a cocina; no se emite ningún evento.
+      responses:
+        '204': { description: Ítem quitado }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ItemAlreadySent' }
+
+  /orders/{orderId}/dispatches:
+    parameters: [{ $ref: '#/components/parameters/OrderId' }]
+    post:
+      tags: [Envío a cocina]
+      summary: Enviar a cocina todos los ítems por enviar
+      description: |
+        Rol WAITER, cualquier mozo (AC-3.10). En una transacción, bajo el bloqueo de envío
+        ([research.md §4](../research.md)): comprueba la clave, toma todos los ítems `DRAFT`,
+        verifica su disponibilidad, asigna `sequence` y `round`, copia el precio y pasa los
+        ítems a `PENDING` (FR-015 a FR-018, FR-025). Emite `orders:dispatch-sent`.
+
+        Idempotencia (FR-022, AC-3.9): un reintento con la misma `Idempotency-Key` sobre el
+        mismo pedido devuelve el mismo envío con `201`, sin crear otro ni emitir de nuevo.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID que el cliente genera al tocar "Enviar a cocina" y reutiliza en los reintentos.
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Envío registrado (o el ya registrado con esa clave)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dispatch' }
+        '400':
+          description: Falta la cabecera `Idempotency-Key` o no es un UUID (`VALIDATION_ERROR`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            - `NOTHING_TO_SEND`: no hay ítems por enviar; no se crea nada (FR-019, AC-3.4).
+            - `ITEMS_UNAVAILABLE`: algún ítem ya no está disponible; no se envía nada y
+              `details.items` los lista (FR-020, AC-3.5).
+            - `IDEMPOTENCY_KEY_REUSED`: la clave ya se usó en otro pedido.
+            - `ORDER_NOT_OPEN`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              examples:
+                itemsUnavailable:
+                  value:
+                    code: ITEMS_UNAVAILABLE
+                    message: Algunos platos ya no están disponibles. Quítalos o cámbialos para enviar.
+                    details:
+                      items:
+                        - { orderItemId: 0b7e…, menuItemId: 91aa…, name: Chupe de camarones }
+
+  /order-items/{itemId}/voids:
+    parameters: [{ $ref: '#/components/parameters/ItemId' }]
+    post:
+      tags: [Anulación]
+      summary: Anular todas o algunas unidades de un ítem enviado
+      description: |
+        Solo ADMIN (FR-028, AC-5.5). Exige motivo y la pantalla pide confirmación (FR-029,
+        AC-5.3). Actualización condicionada ([research.md §7](../research.md)): suma `units` a
+        `voidedQuantity` y, si no queda ninguna unidad, pasa el ítem a `VOIDED`. Registra la
+        fila `ItemVoid` (FR-031). Emite `orders:item-voided`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VoidOrderItemRequest' }
+      responses:
+        '201':
+          description: Anulación registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VoidResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `ITEM_NOT_VOIDABLE`: el ítem está `READY` o `VOIDED`, no se ha enviado, o se piden
+            más unidades de las que quedan (AC-5.4). `details.reason` dice cuál y
+            `details.remainingQuantity` cuántas quedan. Con `reason: READY` el mensaje es "El plato
+            ya está listo; no se puede anular"; en los demás casos, el de `ERROR_MESSAGES` ("Este
+            ítem ya no se puede anular"). También `ORDER_NOT_OPEN`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              example:
+                code: ITEM_NOT_VOIDABLE
+                message: El plato ya está listo; no se puede anular
+                details: { reason: READY, remainingQuantity: 2 }
+
+  /orders/{orderId}/request-bill:
+    parameters: [{ $ref: '#/components/parameters/OrderId' }]
+    post:
+      tags: [Pedido]
+      summary: Pedir la cuenta
+      description: |
+        Rol WAITER, cualquier mozo. Mesa `OCUPADA → POR_COBRAR` (FR-033, AC-6.1). Emite
+        `orders:table-status-changed`, que también reciben las pantallas de caja.
+      responses:
+        '200':
+          description: Mesa por cobrar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `HAS_UNSENT_ITEMS` (hay ítems por enviar, AC-6.3), `NO_CONSUMPTION` (nada enviado o
+            todo anulado, AC-6.4), `TABLE_STATE_CONFLICT` (la mesa ya no está ocupada;
+            `details.current`) u `ORDER_NOT_OPEN`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /orders/{orderId}/cancel:
+    parameters: [{ $ref: '#/components/parameters/OrderId' }]
+    post:
+      tags: [Mesas]
+      summary: Cancelar la apertura de una mesa sin nada enviado
+      description: |
+        Rol WAITER, solo el mozo responsable (o un ADMIN). La pantalla pide confirmación. Pedido
+        `OPEN → CANCELLED` y mesa `OCUPADA → LIBRE` (FR-006, AC-1.6). Emite
+        `orders:table-status-changed`.
+      responses:
+        '204': { description: Apertura cancelada }
+        '403':
+          description: |
+            `FORBIDDEN` con el mensaje "Solo el mozo que abrió la mesa puede cancelar la
+            apertura" (AC-1.8).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `CANCEL_NOT_ALLOWED` (el pedido ya tiene algo enviado a cocina),
+            `TABLE_STATE_CONFLICT` u `ORDER_NOT_OPEN`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthenticated:
+      description: Sin sesión válida (`UNAUTHENTICATED`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Rol sin permiso (`FORBIDDEN`, "No tienes permiso para realizar esta acción")
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: No existe (`NOT_FOUND`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ValidationError:
+      description: Datos inválidos (`VALIDATION_ERROR`); `details` trae el mensaje por campo en español
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    OrderNotOpen:
+      description: El pedido ya se cobró o se canceló (`ORDER_NOT_OPEN`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ItemAlreadySent:
+      description: |
+        `ITEM_ALREADY_SENT`: el ítem ya se envió a cocina; solo el administrador puede anularlo
+        (FR-024, AC-3.7). También `ORDER_NOT_OPEN`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: |
+            Códigos nuevos de esta feature: TABLE_NOT_AVAILABLE, TABLE_STATE_CONFLICT,
+            ORDER_NOT_OPEN, TABLE_AWAITING_PAYMENT, MENU_ITEM_UNAVAILABLE, ITEM_ALREADY_SENT,
+            NOTHING_TO_SEND, ITEMS_UNAVAILABLE, IDEMPOTENCY_KEY_REUSED, ITEM_NOT_VOIDABLE,
+            HAS_UNSENT_ITEMS, NO_CONSUMPTION, CANCEL_NOT_ALLOWED.
+        message: { type: string, description: Mensaje en español para mostrar }
+        details: { type: object, additionalProperties: true }
+
+    TableStatus:
+      type: string
+      enum: [LIBRE, OCUPADA, POR_COBRAR]
+
+    OrderStatus:
+      type: string
+      enum: [OPEN, PAID, CANCELLED]
+
+    OrderItemStatus:
+      type: string
+      enum: [DRAFT, PENDING, PREPARING, READY, VOIDED]
+
+    UserRef:
+      type: object
+      required: [id, fullName]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+
+    Money:
+      type: object
+      required: [amount, formatted]
+      properties:
+        amount: { type: number, description: Soles con 2 decimales }
+        formatted: { type: string, example: S/ 24.50 }
+
+    OpenOrderRequest:
+      type: object
+      required: [tableId]
+      additionalProperties: false
+      properties:
+        tableId: { type: string, format: uuid }
+        guestCount: { type: [integer, 'null'], minimum: 1, maximum: 50 }
+
+    UpdateOrderRequest:
+      type: object
+      required: [guestCount]
+      additionalProperties: false
+      properties:
+        guestCount: { type: [integer, 'null'], minimum: 1, maximum: 50 }
+
+    AddOrderItemRequest:
+      type: object
+      required: [menuItemId, quantity]
+      additionalProperties: false
+      properties:
+        menuItemId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1, maximum: 99 }
+        notes: { type: [string, 'null'], maxLength: 140 }
+        confirmReopen:
+          type: boolean
+          description: Obligatorio en `true` si la mesa está por cobrar (FR-034).
+
+    UpdateOrderItemRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        quantity: { type: integer, minimum: 1, maximum: 99 }
+        notes: { type: [string, 'null'], maxLength: 140 }
+
+    VoidOrderItemRequest:
+      type: object
+      required: [units, reason]
+      additionalProperties: false
+      properties:
+        units: { type: integer, minimum: 1, description: 'Por defecto la pantalla propone todas las que quedan' }
+        reason: { type: string, minLength: 3, maxLength: 200 }
+
+    TableOverview:
+      type: object
+      required: [id, tableNumber, capacity, status, order]
+      properties:
+        id: { type: string, format: uuid }
+        tableNumber: { type: integer }
+        capacity: { type: integer }
+        status: { $ref: '#/components/schemas/TableStatus' }
+        order:
+          description: Pedido en curso; nulo si la mesa está libre
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, waiter, guestCount, openedAt, hasUnsentItems]
+              properties:
+                id: { type: string, format: uuid }
+                waiter: { $ref: '#/components/schemas/UserRef' }
+                guestCount: { type: [integer, 'null'] }
+                openedAt: { type: string, format: date-time }
+                hasUnsentItems: { type: boolean }
+
+    OrderDetail:
+      type: object
+      required: [id, status, table, waiter, guestCount, openedAt, items, dispatches, consumption, canCancel, canRequestBill]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        table:
+          type: object
+          required: [id, tableNumber, status]
+          properties:
+            id: { type: string, format: uuid }
+            tableNumber: { type: integer }
+            status: { $ref: '#/components/schemas/TableStatus' }
+        waiter: { $ref: '#/components/schemas/UserRef' }
+        guestCount: { type: [integer, 'null'] }
+        openedAt: { type: string, format: date-time }
+        closedAt: { type: [string, 'null'], format: date-time }
+        items:
+          type: array
+          description: Primero los ítems por enviar; luego los enviados por `sequence` del envío
+          items: { $ref: '#/components/schemas/OrderItem' }
+        dispatches:
+          type: array
+          items: { $ref: '#/components/schemas/DispatchSummary' }
+        consumption:
+          type: object
+          required: [total]
+          description: Suma de los ítems enviados no anulados (FR-035)
+          properties:
+            total: { $ref: '#/components/schemas/Money' }
+        canCancel: { type: boolean, description: 'Pedido sin envíos y el usuario es el responsable o ADMIN' }
+        canRequestBill: { type: boolean, description: Mesa ocupada, sin ítems por enviar y con consumo }
+
+    OrderItem:
+      type: object
+      required: [id, menuItem, quantity, voidedQuantity, activeQuantity, notes, status, dispatchId, unitPrice, subtotal, voids]
+      properties:
+        id: { type: string, format: uuid }
+        menuItem:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        voidedQuantity: { type: integer, minimum: 0 }
+        activeQuantity: { type: integer, minimum: 0, description: quantity − voidedQuantity }
+        notes: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/OrderItemStatus' }
+        dispatchId: { type: [string, 'null'], format: uuid }
+        unitPrice:
+          description: Precio fijado al enviar; nulo en DRAFT
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Money' }]
+        subtotal:
+          description: unitPrice × activeQuantity; nulo en DRAFT
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Money' }]
+        currentPrice:
+          description: Solo en DRAFT, precio actual de la carta
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Money' }]
+        isAvailable:
+          type: [boolean, 'null']
+          description: Solo en DRAFT, si el plato sigue disponible
+        voids:
+          type: array
+          items: { $ref: '#/components/schemas/ItemVoid' }
+
+    DispatchSummary:
+      type: object
+      required: [id, sequence, round, sentBy, sentAt]
+      properties:
+        id: { type: string, format: uuid }
+        sequence: { type: integer, minimum: 1 }
+        round: { type: integer, minimum: 1 }
+        sentBy: { $ref: '#/components/schemas/UserRef' }
+        sentAt: { type: string, format: date-time }
+
+    Dispatch:
+      allOf:
+        - $ref: '#/components/schemas/DispatchSummary'
+        - type: object
+          required: [orderId, tableNumber, items]
+          properties:
+            orderId: { type: string, format: uuid }
+            tableNumber: { type: integer }
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/OrderItem' }
+
+    ItemVoid:
+      type: object
+      required: [id, units, reason, voidedBy, voidedAt]
+      properties:
+        id: { type: string, format: uuid }
+        units: { type: integer, minimum: 1 }
+        reason: { type: string }
+        voidedBy: { $ref: '#/components/schemas/UserRef' }
+        voidedAt: { type: string, format: date-time }
+
+    VoidResult:
+      type: object
+      required: [itemVoid, item]
+      properties:
+        itemVoid: { $ref: '#/components/schemas/ItemVoid' }
+        item: { $ref: '#/components/schemas/OrderItem' }

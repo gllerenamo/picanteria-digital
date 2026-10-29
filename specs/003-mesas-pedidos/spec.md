@@ -222,8 +222,8 @@ recogerlo, esté en la pantalla que esté.
 esperando. Es P2 porque el flujo básico funciona sin ella: el mozo todavía puede ir a mirar.
 
 **Independent Test**: se envía un pedido y se cambian los estados de sus ítems desde la cocina
-(o con un sustituto si el módulo 3 aún no existe). El mozo ve cada cambio y recibe el aviso
-cuando un ítem pasa a listo.
+(o con un sustituto si el módulo 3 aún no existe). El mozo ve cada cambio de estado sin
+recargar.
 
 **Acceptance Scenarios**:
 
@@ -232,15 +232,11 @@ cuando un ítem pasa a listo.
    anulado), separado de los ítems aún no enviados.
 2. **AC-4.2**: **Dado** un ítem pendiente, **Cuando** la cocina lo pasa a en preparación,
    **Entonces** el mozo ve el cambio sin recargar la pantalla.
-3. **AC-4.3**: **Dado** un ítem de una mesa de la que el mozo es responsable, **Cuando** la
-   cocina lo marca listo, **Entonces** ese mozo recibe un aviso con la mesa, el plato y la
-   cantidad, aunque esté en otra pantalla del módulo (por ejemplo, tomando el pedido de otra mesa).
-4. **AC-4.4**: **Dado** un ítem que un mozo envió en una mesa de la que no es responsable,
-   **Cuando** la cocina lo marca listo, **Entonces** el aviso le llega al mozo responsable de la
-   mesa y no al que envió el ítem.
-5. **AC-4.5**: **Dado** que la tablet del mozo estuvo sin conexión mientras un plato de sus mesas
-   pasó a listo, **Cuando** recupera la conexión, **Entonces** ve el estado actual de sus mesas y
-   recibe el aviso de ese plato.
+
+Los avisos de plato listo (FR-027) los implementa y prueba `004-cocina`: llegan al mozo
+responsable con la mesa, el plato y la cantidad (004 AC-3.1), solo a él aunque otro mozo haya
+enviado el ítem (004 AC-3.5), y los pendientes aparecen al volver a abrir la aplicación
+(004 AC-3.3).
 
 ---
 
@@ -333,7 +329,7 @@ módulo 4 aún no existe) y ningún mozo puede liberarla.
     no duplica el envío (AC-3.9).
   - Al reconectarse, el mozo ve el estado real de las mesas y de los ítems, incluidos los
     cambios que hicieron otros mozos, la cocina o Caja mientras estuvo desconectado, y recibe
-    los avisos de platos listos que no le llegaron (AC-4.5).
+    los avisos de platos listos que no le llegaron (004 AC-3.3).
   - Si mientras estuvo desconectado algún plato de su pedido por enviar se agotó, al reintentar
     se aplica la misma regla de plato agotado.
 - **Dos mozos intentan abrir la misma mesa a la vez**: solo uno la abre; el otro recibe un
@@ -438,6 +434,7 @@ módulo 4 aún no existe) y ningún mozo puede liberarla.
 - **FR-027**: Cuando la cocina marca listo un ítem, el sistema MUST avisar al mozo responsable de
   esa mesa, y solo a él, aunque el ítem lo haya tomado o enviado otro mozo, con un aviso que indique la mesa, el plato y la cantidad. El aviso MUST
   verse en cualquier pantalla del módulo y permanecer hasta que el mozo lo marque como visto.
+  Lo implementa la 004 (FR-015 a FR-018).
 
 **Anulación**
 
