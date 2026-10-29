@@ -43,7 +43,7 @@
   Assumptions como valores por defecto, para confirmarlos en la clarificación.
 - No se mencionan tecnologías ni el contrato con Cocina: los requisitos de "sin recargar" y "al
   instante" se expresan como resultados visibles con tiempos en SC-003 y SC-004.
-- Los escenarios de aceptación tienen identificadores `US<n>-AS<n>` para la trazabilidad de
-  pruebas que exige el Principio II de la constitución. Los requisitos sin escenario numerado
+- Los escenarios de aceptación tienen identificadores `AC-<historia>.<n>` para la trazabilidad
+  de pruebas que exige el Principio II de la constitución. Los requisitos sin escenario numerado
   propio (FR-023, FR-025, FR-037, FR-039 a FR-041) se verifican con su identificador FR y con los
   casos borde.
