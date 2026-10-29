@@ -241,7 +241,7 @@ ve cada cambio sin recargar. Los avisos los prueba la 004 (AC-3.1, AC-3.3 y AC-3
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] Crear `apps/web/src/features/orders/SentItems.tsx` (agrupado por ronda; etiqueta de estado con texto y color AA; unidades anuladas con su motivo) e integrarlo en `OrderPage.tsx`; comprobar que `useOrdersRealtime` (T025) escucha `kitchen:item-status-changed` con la constante de `events.ts` (depende de T025, T043)
+- [X] T046 [US4] Crear `apps/web/src/features/orders/SentItems.tsx` (agrupado por ronda; etiqueta de estado con texto y color AA; unidades anuladas con su motivo) e integrarlo en `OrderPage.tsx`; comprobar que `useOrdersRealtime` (T025) escucha `kitchen:item-status-changed` con la constante de `events.ts` (depende de T025, T043)
 
 **Checkpoint**: el mozo sigue sus platos sin ir a preguntar; los avisos llegan con la 004.
 

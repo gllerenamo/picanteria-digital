@@ -9,6 +9,7 @@ import { DraftItems } from './DraftItems';
 import { GuestCountStepper } from './GuestCountStepper';
 import { MenuPicker, type NewItem } from './MenuPicker';
 import { hasPendingKey } from './pending-dispatch';
+import { SentItems } from './SentItems';
 import { TABLE_STATUS_LABELS } from './table-status';
 import { useOrdersRealtime } from './useOrdersRealtime';
 
@@ -139,6 +140,7 @@ function OrderView({ orderId }: { orderId: string }) {
               )}
             </div>
           )}
+          <SentItems order={order} />
         </div>
       </div>
 
