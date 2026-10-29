@@ -323,8 +323,9 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
 
 - **Comanda**: es la vista de cocina de un **Envío a cocina** (entidad del módulo Mesas y
   pedidos); no es una entidad nueva. De él usa el número correlativo, la mesa, el mozo que lo
-  envió, la hora y sus ítems. Cocina agrega un estado derivado (activa, completada o anulada),
-  la hora en que se completó y, si fue anulada por completo, cuándo la cocina tocó "Entendido".
+  envió, la hora y sus ítems. Cocina agrega un estado derivado (activa, completada o anulada) y
+  la hora en que se completó. Una comanda anulada por completo deja la lista cuando todas sus
+  anulaciones tienen su "Entendido".
 - **Ítem de comanda**: es el **Ítem del pedido** del módulo Mesas y pedidos visto desde
   cocina: plato o bebida, cantidad pedida, unidades anuladas, cantidad por preparar (pedida
   menos anuladas), nota, estado (Pendiente, En preparación, Listo, Anulado) y la hora de cada

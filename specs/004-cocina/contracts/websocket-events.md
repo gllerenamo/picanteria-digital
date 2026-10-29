@@ -16,8 +16,10 @@ comandas.
 
 ### `kitchen:item-status-changed`
 
-**Salas**: `role:KITCHEN` y `role:WAITER`. Reemplaza el nombre reservado en la 001. Lo usan
-las demás pantallas de cocina (AC-2.6) y la vista del mozo de la 003 (US4-AS2).
+**Salas**: `role:KITCHEN` y `role:WAITER`. Usa el nombre reservado en la 001, que preveía
+`role:WAITER` y `user:<mozo>`; se cambia `user:<mozo>` por `role:KITCHEN` porque todos los mozos
+ven los estados (003 US4-AS2) y las demás pantallas de cocina también los necesitan (AC-2.6).
+El aviso personal va aparte en `kitchen:ready-notice`.
 
 ```ts
 type ItemStatusChangedPayload = {
