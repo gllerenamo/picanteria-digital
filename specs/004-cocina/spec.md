@@ -36,7 +36,7 @@ correlativo que fija el orden de llegada.
 
 El **mozo responsable** de una mesa es el mozo que la abrió (definición de `003-mesas-pedidos`).
 
-Los criterios de aceptación se identifican como `CA-<historia>.<número>`; cada prueba
+Los criterios de aceptación se identifican como `AC-<historia>.<número>`; cada prueba
 automatizada debe citar el identificador del criterio que cubre (Constitución, Principio II).
 
 ### User Story 1 - Ver las comandas en orden de llegada (Priority: P1)
@@ -55,25 +55,25 @@ completo.
 
 **Acceptance Scenarios**:
 
-1. **CA-1.1** — **Dado** que no hay comandas activas, **cuando** la cocina abre la pantalla,
+1. **AC-1.1** — **Dado** que no hay comandas activas, **cuando** la cocina abre la pantalla,
    **entonces** ve el mensaje "No hay pedidos pendientes".
-2. **CA-1.2** — **Dado** que el envío N.º 12 (mesa 4, 12:05) y el envío N.º 13 (mesa 2,
+2. **AC-1.2** — **Dado** que el envío N.º 12 (mesa 4, 12:05) y el envío N.º 13 (mesa 2,
    12:10) están activos, **cuando** la cocina mira la pantalla, **entonces** la comanda N.º 12
    aparece antes que la N.º 13.
-3. **CA-1.3** — **Dado** que la pantalla de cocina está abierta, **cuando** un mozo envía un
+3. **AC-1.3** — **Dado** que la pantalla de cocina está abierta, **cuando** un mozo envía un
    pedido nuevo, **entonces** la comanda aparece al final de la lista en pocos segundos, sin
    recargar ni tocar la pantalla, resaltada como nueva y acompañada de un sonido breve.
-4. **CA-1.4** — **Dado** una comanda en pantalla, **cuando** la cocina la lee, **entonces**
+4. **AC-1.4** — **Dado** una comanda en pantalla, **cuando** la cocina la lee, **entonces**
    ve el número de envío, el número de mesa, el nombre del mozo que la envió, la hora de
    llegada y, por cada ítem, la cantidad, el nombre del plato o bebida y la nota del mozo
    (por ejemplo "sin ají") resaltada.
-5. **CA-1.5** — **Dado** que la mesa 3 ya tiene una comanda en cocina, **cuando** un mozo
+5. **AC-1.5** — **Dado** que la mesa 3 ya tiene una comanda en cocina, **cuando** un mozo
    envía otra ronda para esa mesa, **entonces** llega como una comanda nueva, con su propio
    número y hora, identificada como "Mesa 3 · 2.ª ronda".
-6. **CA-1.6** — **Dado** que un mozo reintentó un envío cuyo resultado había quedado incierto
+6. **AC-1.6** — **Dado** que un mozo reintentó un envío cuyo resultado había quedado incierto
    por un corte de conexión, **cuando** la cocina mira la pantalla, **entonces** esa comanda
    aparece una sola vez.
-7. **CA-1.7** — **Dado** un envío con 1 adobo y 2 chichas moradas, **cuando** llega a cocina,
+7. **AC-1.7** — **Dado** un envío con 1 adobo y 2 chichas moradas, **cuando** llega a cocina,
    **entonces** la comanda muestra los dos ítems, bebidas incluidas.
 
 ---
@@ -93,21 +93,21 @@ y se verifica la secuencia permitida, el registro de horas y el retiro de la com
 
 **Acceptance Scenarios**:
 
-1. **CA-2.1** — **Dado** un ítem "Pendiente", **cuando** la cocina toca "Preparar",
+1. **AC-2.1** — **Dado** un ítem "Pendiente", **cuando** la cocina toca "Preparar",
    **entonces** el ítem pasa a "En preparación" y se registra la hora del cambio.
-2. **CA-2.2** — **Dado** un ítem "En preparación", **cuando** la cocina toca "Listo",
+2. **AC-2.2** — **Dado** un ítem "En preparación", **cuando** la cocina toca "Listo",
    **entonces** el ítem pasa a "Listo" y se registra la hora del cambio.
-3. **CA-2.3** — **Dado** un ítem "Pendiente", **cuando** se intenta marcarlo "Listo" sin pasar
+3. **AC-2.3** — **Dado** un ítem "Pendiente", **cuando** se intenta marcarlo "Listo" sin pasar
    por "En preparación", **entonces** el sistema no lo permite.
-4. **CA-2.4** — **Dado** una comanda cuyos ítems no anulados están todos "Listo",
+4. **AC-2.4** — **Dado** una comanda cuyos ítems no anulados están todos "Listo",
    **cuando** se marca el último, **entonces** la comanda sale de la lista de activas y pasa a
    la sección "Completadas", donde permanece visible 30 minutos.
-5. **CA-2.5** — **Dado** un ítem cuyo estado se cambió por error, **cuando** la cocina toca
+5. **AC-2.5** — **Dado** un ítem cuyo estado se cambió por error, **cuando** la cocina toca
    "Deshacer" y confirma, **entonces** el ítem vuelve a su estado anterior; si la comanda
    estaba en "Completadas", vuelve a la lista de activas en su posición original.
-6. **CA-2.6** — **Dado** dos pantallas de cocina abiertas, **cuando** en una se cambia el
+6. **AC-2.6** — **Dado** dos pantallas de cocina abiertas, **cuando** en una se cambia el
    estado de un ítem, **entonces** la otra muestra el cambio en pocos segundos sin recargar.
-7. **CA-2.7** — **Dado** un usuario con rol Mozo o Cajero, **cuando** intenta cambiar el
+7. **AC-2.7** — **Dado** un usuario con rol Mozo o Cajero, **cuando** intenta cambiar el
    estado de un ítem de cocina, **entonces** el sistema lo rechaza con el mensaje "No tienes
    permiso para cambiar el estado de los platos".
 
@@ -127,16 +127,16 @@ responsable, persiste hasta que lo marca como visto y no llega a ningún otro mo
 
 **Acceptance Scenarios**:
 
-1. **CA-3.1** — **Dado** que el mozo Juan abrió la mesa 5, **cuando** la cocina marca
+1. **AC-3.1** — **Dado** que el mozo Juan abrió la mesa 5, **cuando** la cocina marca
    "2 × Ají de gallina" como "Listo", **entonces** Juan ve en pocos segundos el aviso
    "Mesa 5: 2 × Ají de gallina — listo" sin recargar.
-2. **CA-3.2** — **Dado** un aviso de plato listo visible, **cuando** el mozo toca "Visto",
+2. **AC-3.2** — **Dado** un aviso de plato listo visible, **cuando** el mozo toca "Visto",
    **entonces** el aviso desaparece de su vista; mientras no lo toque, el aviso permanece.
-3. **CA-3.3** — **Dado** que el mozo no tenía la aplicación abierta cuando el plato quedó
+3. **AC-3.3** — **Dado** que el mozo no tenía la aplicación abierta cuando el plato quedó
    listo, **cuando** vuelve a abrirla, **entonces** ve todos sus avisos pendientes.
-4. **CA-3.4** — **Dado** un aviso de plato listo, **cuando** la cocina deshace ese "Listo"
-   (CA-2.5), **entonces** el aviso se retira de la vista del mozo.
-5. **CA-3.5** — **Dado** que Juan abrió la mesa 5 y la mesera Rosa envió su segunda ronda,
+4. **AC-3.4** — **Dado** un aviso de plato listo, **cuando** la cocina deshace ese "Listo"
+   (AC-2.5), **entonces** el aviso se retira de la vista del mozo.
+5. **AC-3.5** — **Dado** que Juan abrió la mesa 5 y la mesera Rosa envió su segunda ronda,
    **cuando** la cocina marca "Listo" un plato de esa ronda, **entonces** el aviso llega solo
    a Juan; ni Rosa ni ningún otro mozo lo reciben.
 
@@ -155,12 +155,12 @@ comprueba el contador y el cambio de nivel de alerta en los umbrales definidos.
 
 **Acceptance Scenarios**:
 
-1. **CA-4.1** — **Dado** una comanda activa, **cuando** la cocina la mira, **entonces** ve el
+1. **AC-4.1** — **Dado** una comanda activa, **cuando** la cocina la mira, **entonces** ve el
    tiempo transcurrido desde su llegada en minutos, actualizado solo, sin recargar.
-2. **CA-4.2** — **Dado** una comanda con 15 minutos o más de espera, **entonces** se muestra
+2. **AC-4.2** — **Dado** una comanda con 15 minutos o más de espera, **entonces** se muestra
    con la marca "Demorado" y color ámbar; con 25 minutos o más, con la marca "Muy demorado" y
    color rojo. La marca de texto se muestra siempre junto al color.
-3. **CA-4.3** — **Dado** una comanda que pasa a "Completadas", **entonces** su contador se
+3. **AC-4.3** — **Dado** una comanda que pasa a "Completadas", **entonces** su contador se
    detiene y muestra el tiempo total que tomó.
 
 ---
@@ -179,15 +179,15 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
 
 **Acceptance Scenarios**:
 
-1. **CA-5.1** — **Dado** un ítem "Pendiente" o "En preparación", **cuando** el
+1. **AC-5.1** — **Dado** un ítem "Pendiente" o "En preparación", **cuando** el
    administrador anula todas sus unidades, **entonces** en la pantalla de cocina el ítem
    aparece tachado con la etiqueta "ANULADO" y ya no se puede cambiar su estado.
-2. **CA-5.2** — **Dado** un ítem de 3 rocotos rellenos "En preparación", **cuando** el
+2. **AC-5.2** — **Dado** un ítem de 3 rocotos rellenos "En preparación", **cuando** el
    administrador anula 1 unidad, **entonces** la cocina ve en pocos segundos que ahora debe
    preparar 2, con la indicación "1 anulada", y el ítem conserva su estado y sigue avanzando.
-3. **CA-5.3** — **Dado** una comanda con un ítem anulado, **cuando** el resto de sus ítems
+3. **AC-5.3** — **Dado** una comanda con un ítem anulado, **cuando** el resto de sus ítems
    pasa a "Listo", **entonces** la comanda se completa normalmente.
-4. **CA-5.4** — **Dado** una comanda cuyos ítems fueron anulados en su totalidad,
+4. **AC-5.4** — **Dado** una comanda cuyos ítems fueron anulados en su totalidad,
    **entonces** permanece en la lista marcada como "Comanda anulada" hasta que la cocina toca
    "Entendido".
 
@@ -200,7 +200,7 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
   sincroniza sola y muestra todas las comandas, estados y anulaciones actuales, sin perder ni
   duplicar ninguna.
 - **Envío reintentado por el mozo**: si el mozo reintenta un envío cuyo resultado quedó
-  incierto, la cocina no ve una segunda comanda (CA-1.6).
+  incierto, la cocina no ve una segunda comanda (AC-1.6).
 - **Cambio simultáneo del mismo ítem desde dos pantallas**: se aplica el primero; la
   segunda pantalla ve el estado ya actualizado y su acción no produce un salto de estado.
 - **Ítem con cantidad mayor a 1** (por ejemplo, 3 rocotos rellenos): el estado se lleva por
