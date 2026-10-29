@@ -168,17 +168,20 @@ packages/shared/src/
 apps/api/
 ├── prisma/
 │   ├── schema.prisma         # + OrderItemStatusChange, ReadyNotice, KitchenVoidAck
-│   └── migrations/<fecha>_kitchen/migration.sql
+│   └── migrations/20261029000003_kitchen/migration.sql
 ├── src/
 │   ├── kitchen/
 │   │   ├── kitchen.module.ts
 │   │   ├── kitchen.controller.ts         # board, items/:id/advance, items/:id/undo, void-notices/:id/ack
 │   │   ├── ready-notices.controller.ts   # ready-notices, ready-notices/:id/seen
+│   │   ├── kitchen-rules.ts              # Reglas puras: pasos, ventana de 30 min, estado de la comanda
+│   │   ├── kitchen-rules.spec.ts         # Unitarias de las reglas
 │   │   ├── kitchen-board.service.ts
 │   │   ├── kitchen-items.service.ts
-│   │   ├── kitchen-items.service.spec.ts # Unitarias de transiciones
-│   │   └── ready-notices.service.ts
-│   └── realtime/realtime.gateway.ts      # + emitToRoles / emitToUser (cambio coordinado con la 001)
+│   │   ├── ready-notices.service.ts
+│   │   ├── void-notices.service.ts       # "Entendido" de anulaciones
+│   │   └── params.ts                     # UuidParamPipe con mensaje de "no existe"
+│   └── realtime/realtime.gateway.ts      # + emitToUser (emitToRoles ya lo agregó la 003)
 └── test/
     ├── acceptance/
     │   ├── kitchen-board.acceptance.spec.ts
@@ -189,22 +192,23 @@ apps/api/
 
 apps/web/
 ├── src/
-│   ├── lib/realtime-context.tsx          # RealtimeProvider + useRealtimeEvent
-│   ├── features/auth/useRealtime.ts      # Expone el socket (cambio coordinado con la 001)
-│   ├── app/AppShell.tsx                  # + <ReadyNoticesTray /> para el mozo
+│   ├── lib/realtime-context.tsx          # RealtimeProvider + useRealtimeEvent (ya lo agregó la 003)
+│   ├── components/ConnectionBanner.tsx   # + mensaje propio de cocina (componente de la 003)
+│   ├── app/AppShell.tsx                  # Proveedor de tiempo real también en el encabezado + <ReadyNoticesTray />
 │   ├── app/router.tsx                    # /cocina → KitchenBoardPage
 │   └── features/kitchen/
-│       ├── api.ts                        # useKitchenBoard, useAdvanceItem, useUndoItem, useAckVoid
+│       ├── api.ts                        # useKitchenBoard, useAdvanceItem, useUndoItem, useAcknowledgeVoid
 │       ├── KitchenBoardPage.tsx
 │       ├── TicketCard.tsx · TicketItemRow.tsx · WaitBadge.tsx
-│       ├── VoidNoticesBar.tsx · CompletedSection.tsx · ConnectionBanner.tsx
+│       ├── VoidNoticesBar.tsx · CompletedSection.tsx
 │       ├── useNewTicketAlert.ts · sound.ts · useServerClock.ts
 │       ├── KitchenBoardPage.test.tsx
 │       └── ready-notices/
 │           ├── api.ts · ReadyNoticesTray.tsx · ReadyNoticesTray.test.tsx
+├── tests/msw/kitchen-handlers.ts         # Datos y manejadores MSW de /api/kitchen
 └── e2e/kitchen.spec.ts
 
-.github/workflows/ci.yml                  # check:ac -- 001 004
+.github/workflows/ci.yml                  # check:ac -- 001 002 004
 ```
 
 **Structure Decision**: se sigue el patrón de la 001: el módulo `kitchen` es carpeta hermana de

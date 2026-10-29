@@ -71,13 +71,15 @@ type VoidAcknowledgedPayload = { itemVoidId: string };
 
 ## Eventos que cocina escucha (los emite la 003)
 
-Los nombres y cargas exactos los fija el contrato de la 003; cocina solo necesita que lleguen
-a `role:KITCHEN`. Ante cualquiera de ellos, vuelve a pedir el tablero.
+Los nombres y cargas los fija el contrato de la 003
+([websocket-events.md](../../003-mesas-pedidos/contracts/websocket-events.md)), que reemplazó
+los nombres reservados en la 001. Llegan a `role:KITCHEN`; ante cualquiera de ellos, la cocina
+vuelve a pedir el tablero.
 
-| Hecho | Nombre reservado en la 001 | Para qué lo usa cocina |
-|-------|----------------------------|-------------------------|
-| Envío confirmado | `orders:created` | Comanda nueva: resaltado y sonido (AC-1.3) |
-| Ítem anulado (total o parcial) | `orders:updated` | Tachado, "N anulada(s)" y aviso con "Entendido" (AC-5.1, AC-5.2, AC-5.5) |
+| Hecho | Evento de la 003 | Para qué lo usa cocina |
+|-------|------------------|-------------------------|
+| Envío confirmado | `orders:dispatch-sent` | Comanda nueva: resaltado y sonido (AC-1.3) |
+| Ítem anulado (total o parcial) | `orders:item-voided` | Tachado, "N anulada(s)" y aviso con "Entendido" (AC-5.1, AC-5.2, AC-5.5) |
 
 ## Garantías
 

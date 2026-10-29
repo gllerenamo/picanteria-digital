@@ -1,11 +1,12 @@
 # Lo que cocina necesita de 003-mesas-pedidos
 
-**Para**: el responsable de `003-mesas-pedidos` | **Estado**: por conciliar con el contrato de
-eventos de la 003.
+**Para**: el responsable de `003-mesas-pedidos` | **Estado**: conciliado con la implementación
+de la 003 en `main` (2026-10-29).
 
-Esta lista es la que se usa para revisar el contrato de la 003 antes de que la 004 implemente.
-Los nombres en código son propuestas: si la 003 elige otros, solo cambian aquí y en
-[data-model.md](../data-model.md) §4.
+Esta lista se usó para revisar el contrato de la 003 antes de que la 004 implemente. La 003
+cumplió todos los puntos; la única diferencia de nombre es `DiningTable.tableNumber` (aquí se
+proponía `number`), ya corregida en [data-model.md](../data-model.md) §4. Los eventos E1 y E2
+se llaman `orders:dispatch-sent` y `orders:item-voided`.
 
 ## Datos
 

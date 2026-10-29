@@ -143,7 +143,7 @@ Resumen; el detalle está en [contracts/dependencias-003.md](contracts/dependenc
 |-------------------|-----------------------|
 | `KitchenDispatch` (003) | `id`, `sequence` (correlativo único), `round` (ronda de la mesa), `sentById`, `sentAt`, `orderId` |
 | `Order` (003) | `waiterId` (mozo responsable), `tableId` |
-| `DiningTable` (003) | `number` |
+| `DiningTable` (003) | `tableNumber` |
 | `OrderItem` (003) | `id`, `dispatchId`, `menuItemId`, `quantity`, `voidedQuantity`, `notes`, `status` |
 | `ItemVoid` (003) | `id`, `orderItemId`, `units`, `voidedAt` |
 | `MenuItem` (002) | `name` |

@@ -40,9 +40,9 @@ Textos visibles en español; identificadores de código en inglés.
 
 **Purpose**: dejar la rama lista y el esqueleto del módulo registrado.
 
-- [ ] T001 Actualizar la rama `004-cocina` con `main` y confirmar que existen los modelos de la 003 (`KitchenDispatch`, `Order`, `DiningTable`, `OrderItem` con `voidedQuantity`, `ItemVoid`) en `apps/api/prisma/schema.prisma`; si algún nombre difiere de [data-model.md §4](data-model.md), ajustar ese documento antes de seguir
-- [ ] T002 [P] Crear `apps/api/src/kitchen/kitchen.module.ts` (vacío, importa `PrismaModule` y `RealtimeModule`) y registrarlo en `apps/api/src/app.module.ts`
-- [ ] T003 [P] Agregar `004` al paso de cobertura en `.github/workflows/ci.yml` (`npm run check:ac -- 001 004`)
+- [X] T001 Actualizar la rama `004-cocina` con `main` y confirmar que existen los modelos de la 003 (`KitchenDispatch`, `Order`, `DiningTable`, `OrderItem` con `voidedQuantity`, `ItemVoid`) en `apps/api/prisma/schema.prisma`; si algún nombre difiere de [data-model.md §4](data-model.md), ajustar ese documento antes de seguir
+- [X] T002 [P] Crear `apps/api/src/kitchen/kitchen.module.ts` (vacío, importa `PrismaModule` y `RealtimeModule`) y registrarlo en `apps/api/src/app.module.ts`
+- [X] T003 [P] Agregar `004` al paso de cobertura en `.github/workflows/ci.yml` (`npm run check:ac -- 001 004`)
 
 ---
 
@@ -52,13 +52,13 @@ Textos visibles en español; identificadores de código en inglés.
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de terminar esta fase.
 
-- [ ] T004 Agregar a `apps/api/prisma/schema.prisma` los modelos `OrderItemStatusChange`, `ReadyNotice` y `KitchenVoidAck` según [data-model.md §1](data-model.md) (UUID, `Timestamptz(3)`, `@@map` en snake_case, `onDelete: Restrict`) y generar la migración `apps/api/prisma/migrations/<fecha>_kitchen/migration.sql`, añadiendo a mano el índice único parcial `ready_notices_open_item`
-- [ ] T005 [P] Agregar a `packages/shared/src/errors.ts` los códigos `ITEM_STATE_CONFLICT` ("Otro usuario ya cambió este plato. Revisa su estado actual."), `ITEM_VOIDED` ("Este plato fue anulado"), `READY_ALREADY_SEEN` ("El mozo ya recogió este plato") y `UNDO_NOT_ALLOWED` ("Ya no se puede deshacer este cambio")
-- [ ] T006 [P] Crear `packages/shared/src/schemas/kitchen.ts` con los esquemas Zod `AdvanceItemBody`, `UndoItemBody`, `TicketItem`, `Ticket`, `VoidNotice`, `KitchenBoard` y `ReadyNotice` de [contracts/rest-api.yaml](contracts/rest-api.yaml), y exportarlos en `packages/shared/src/index.ts`
-- [ ] T007 [P] Agregar a `packages/shared/src/events.ts` los eventos `kitchen:item-status-changed`, `kitchen:ready-notice`, `kitchen:ready-notice-closed` y `kitchen:void-acknowledged` con sus cargas tipadas, y los eventos de la 003 que escucha cocina, en `REALTIME_EVENTS` y `ServerToClientEvents` ([contracts/websocket-events.md](contracts/websocket-events.md))
-- [ ] T008 Agregar a `apps/api/src/realtime/realtime.gateway.ts` los métodos genéricos `emitToRoles(roles, event, payload)` y `emitToUser(userId, event, payload)`, tipados con `ServerToClientEvents` (cambio coordinado con la 001)
-- [ ] T009 [P] Crear `apps/web/src/lib/realtime-context.tsx` (`RealtimeProvider` y `useRealtimeEvent(evento, manejador)`), hacer que `apps/web/src/features/auth/useRealtime.ts` publique en ese contexto el socket que ya abre, y envolver el `<Outlet />` de `apps/web/src/app/AppShell.tsx` con el proveedor (cambio coordinado con la 001)
-- [ ] T010 [P] Crear `apps/api/test/helpers/kitchen-factories.ts` con fábricas que insertan con Prisma: mesa, pedido con mozo responsable, envío con `sequence` y `round`, ítems (plato o bebida, cantidad, nota, estado) y anulaciones con unidades; reutilizar las fábricas de usuarios de la 001
+- [X] T004 Agregar a `apps/api/prisma/schema.prisma` los modelos `OrderItemStatusChange`, `ReadyNotice` y `KitchenVoidAck` según [data-model.md §1](data-model.md) (UUID, `Timestamptz(3)`, `@@map` en snake_case, `onDelete: Restrict`) y generar la migración `apps/api/prisma/migrations/<fecha>_kitchen/migration.sql`, añadiendo a mano el índice único parcial `ready_notices_open_item`
+- [X] T005 [P] Agregar a `packages/shared/src/errors.ts` los códigos `ITEM_STATE_CONFLICT` ("Otro usuario ya cambió este plato. Revisa su estado actual."), `ITEM_VOIDED` ("Este plato fue anulado"), `READY_ALREADY_SEEN` ("El mozo ya recogió este plato") y `UNDO_NOT_ALLOWED` ("Ya no se puede deshacer este cambio")
+- [X] T006 [P] Crear `packages/shared/src/schemas/kitchen.ts` con los esquemas Zod `AdvanceItemBody`, `UndoItemBody`, `TicketItem`, `Ticket`, `VoidNotice`, `KitchenBoard` y `ReadyNotice` de [contracts/rest-api.yaml](contracts/rest-api.yaml), y exportarlos en `packages/shared/src/index.ts`
+- [X] T007 [P] Agregar a `packages/shared/src/events.ts` los eventos `kitchen:item-status-changed`, `kitchen:ready-notice`, `kitchen:ready-notice-closed` y `kitchen:void-acknowledged` con sus cargas tipadas, y los eventos de la 003 que escucha cocina, en `REALTIME_EVENTS` y `ServerToClientEvents` ([contracts/websocket-events.md](contracts/websocket-events.md))
+- [X] T008 Agregar a `apps/api/src/realtime/realtime.gateway.ts` los métodos genéricos `emitToRoles(roles, event, payload)` y `emitToUser(userId, event, payload)`, tipados con `ServerToClientEvents` (cambio coordinado con la 001)
+- [X] T009 [P] Crear `apps/web/src/lib/realtime-context.tsx` (`RealtimeProvider` y `useRealtimeEvent(evento, manejador)`), hacer que `apps/web/src/features/auth/useRealtime.ts` publique en ese contexto el socket que ya abre, y envolver el `<Outlet />` de `apps/web/src/app/AppShell.tsx` con el proveedor (cambio coordinado con la 001)
+- [X] T010 [P] Crear `apps/api/test/helpers/kitchen-factories.ts` con fábricas que insertan con Prisma: mesa, pedido con mozo responsable, envío con `sequence` y `round`, ítems (plato o bebida, cantidad, nota, estado) y anulaciones con unidades; reutilizar las fábricas de usuarios de la 001
 
 **Checkpoint**: base lista; las historias pueden empezar.
 
@@ -73,18 +73,18 @@ hay duplicados en `GET /api/kitchen/board` y en la pantalla.
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T011 [P] [US1] Escribir en `apps/api/test/acceptance/kitchen-board.acceptance.spec.ts`: `[004] AC-1.2` (envíos N.º 12 y 13 salen en ese orden aunque se inserten al revés); `[004] AC-1.4` (cada comanda trae `sequence`, `tableNumber`, `sentBy.fullName`, `sentAt` y por ítem `quantity`, `name`, `notes`); `[004] AC-1.5` (segunda ronda de la mesa 3 con `round: 2` y su propio `sequence`); `[004] AC-1.6` (reintentar el envío con la misma clave de idempotencia por el endpoint de la 003 deja una sola comanda); `[004] AC-1.7` (un envío con adobo y chicha muestra ambos ítems). Caso sin ID: mozo y cajero reciben 403 en `GET /api/kitchen/board`
-- [ ] T012 [P] [US1] Escribir en `apps/web/src/features/kitchen/KitchenBoardPage.test.tsx` (MSW): `[004] AC-1.1` (tablero vacío muestra "No hay pedidos pendientes"); `[004] AC-1.3` (al llegar un evento de envío y volver a pedir el tablero, la comanda nueva aparece al final con la marca de nueva y se llama una vez a la función de sonido, que está simulada); `[004] AC-1.4` (se ven "Mesa 5", el mozo, la hora en formato `es-PE` y la nota "sin ají" resaltada). Casos sin ID: con "Silenciar" activo no suena (FR-003); al desconectarse el socket aparece "Sin conexión" y al reconectarse se vuelve a pedir el tablero (FR-025)
-- [ ] T013 [P] [US1] Escribir en `apps/web/e2e/kitchen.spec.ts` (ambos proyectos de tablet): `[004] AC-1.3` (con `/cocina` abierta, un envío creado por la API aparece en menos de 3 s sin recargar)
+- [X] T011 [P] [US1] Escribir en `apps/api/test/acceptance/kitchen-board.acceptance.spec.ts`: `[004] AC-1.2` (envíos N.º 12 y 13 salen en ese orden aunque se inserten al revés); `[004] AC-1.4` (cada comanda trae `sequence`, `tableNumber`, `sentBy.fullName`, `sentAt` y por ítem `quantity`, `name`, `notes`); `[004] AC-1.5` (segunda ronda de la mesa 3 con `round: 2` y su propio `sequence`); `[004] AC-1.6` (reintentar el envío con la misma clave de idempotencia por el endpoint de la 003 deja una sola comanda); `[004] AC-1.7` (un envío con adobo y chicha muestra ambos ítems). Caso sin ID: mozo y cajero reciben 403 en `GET /api/kitchen/board`
+- [X] T012 [P] [US1] Escribir en `apps/web/src/features/kitchen/KitchenBoardPage.test.tsx` (MSW): `[004] AC-1.1` (tablero vacío muestra "No hay pedidos pendientes"); `[004] AC-1.3` (al llegar un evento de envío y volver a pedir el tablero, la comanda nueva aparece al final con la marca de nueva y se llama una vez a la función de sonido, que está simulada); `[004] AC-1.4` (se ven "Mesa 5", el mozo, la hora en formato `es-PE` y la nota "sin ají" resaltada). Casos sin ID: con "Silenciar" activo no suena (FR-003); al desconectarse el socket aparece "Sin conexión" y al reconectarse se vuelve a pedir el tablero (FR-025)
+- [X] T013 [P] [US1] Escribir en `apps/web/e2e/kitchen.spec.ts` (ambos proyectos de tablet): `[004] AC-1.3` (con `/cocina` abierta, un envío creado por la API aparece en menos de 3 s sin recargar)
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Crear `apps/api/src/kitchen/kitchen-board.service.ts` con `getBoard(now)`: comandas con algún ítem `PENDING`/`PREPARING` ordenadas por `sequence`, cada ítem con `name` del plato, `toPrepare` y `statusChangedAt`, más `serverTime` (depende de T004, T006)
-- [ ] T015 [US1] Crear `apps/api/src/kitchen/kitchen.controller.ts` con `GET /kitchen/board` y `@Roles(Role.KITCHEN)`, respuesta validada con el esquema `KitchenBoard` (depende de T014)
-- [ ] T016 [P] [US1] Crear `apps/web/src/features/kitchen/api.ts` con `useKitchenBoard()` (TanStack Query) que vuelve a pedir el tablero ante los eventos de la 003 y al reconectarse el socket, usando `useRealtimeEvent` (depende de T009)
-- [ ] T017 [P] [US1] Crear `apps/web/src/features/kitchen/TicketCard.tsx` y `TicketItemRow.tsx`: número de envío, "Mesa N" o "Mesa N · k.ª ronda", mozo, hora, ítems con cantidad y nota resaltada; texto con la clase `text-kitchen` (≥ 18 px)
-- [ ] T018 [P] [US1] Crear `apps/web/src/features/kitchen/sound.ts` (tono corto con Web Audio API, estado "Silenciar" en `localStorage` con `try/catch`, botón "Activar sonido" si el contexto de audio está suspendido) y `useNewTicketAlert.ts` (compara los `dispatchId` con el tablero anterior, resalta los nuevos 10 s y suena una vez; no suena en la primera carga)
-- [ ] T019 [US1] Crear `apps/web/src/features/kitchen/ConnectionBanner.tsx` ("Sin conexión — los pedidos nuevos no se están recibiendo") y `KitchenBoardPage.tsx` (rejilla de una columna en 768 px y de 2 o 3 en 1366 px, sin desplazamiento horizontal, mensaje vacío); registrar `/cocina → KitchenBoardPage` en `apps/web/src/app/router.tsx` y borrar `features/role-home/KitchenHome.tsx` (depende de T016–T018)
+- [X] T014 [US1] Crear `apps/api/src/kitchen/kitchen-board.service.ts` con `getBoard(now)`: comandas con algún ítem `PENDING`/`PREPARING` ordenadas por `sequence`, cada ítem con `name` del plato, `toPrepare` y `statusChangedAt`, más `serverTime` (depende de T004, T006)
+- [X] T015 [US1] Crear `apps/api/src/kitchen/kitchen.controller.ts` con `GET /kitchen/board` y `@Roles(Role.KITCHEN)`, respuesta validada con el esquema `KitchenBoard` (depende de T014)
+- [X] T016 [P] [US1] Crear `apps/web/src/features/kitchen/api.ts` con `useKitchenBoard()` (TanStack Query) que vuelve a pedir el tablero ante los eventos de la 003 y al reconectarse el socket, usando `useRealtimeEvent` (depende de T009)
+- [X] T017 [P] [US1] Crear `apps/web/src/features/kitchen/TicketCard.tsx` y `TicketItemRow.tsx`: número de envío, "Mesa N" o "Mesa N · k.ª ronda", mozo, hora, ítems con cantidad y nota resaltada; texto con la clase `text-kitchen` (≥ 18 px)
+- [X] T018 [P] [US1] Crear `apps/web/src/features/kitchen/sound.ts` (tono corto con Web Audio API, estado "Silenciar" en `localStorage` con `try/catch`, botón "Activar sonido" si el contexto de audio está suspendido) y `useNewTicketAlert.ts` (compara los `dispatchId` con el tablero anterior, resalta los nuevos 10 s y suena una vez; no suena en la primera carga)
+- [X] T019 [US1] Reutilizar `apps/web/src/components/ConnectionBanner.tsx` de la 003 con un mensaje propio ("Sin conexión — los pedidos nuevos no se están recibiendo") y crear `KitchenBoardPage.tsx` (rejilla de una columna en 768 px y de 2 o 3 en 1366 px, sin desplazamiento horizontal, mensaje vacío); registrar `/cocina → KitchenBoardPage` en `apps/web/src/app/router.tsx` y borrar `features/role-home/KitchenHome.tsx` (depende de T016–T018)
 
 **Checkpoint**: la cocina recibe comandas en tiempo real; es el MVP demostrable.
 
@@ -99,20 +99,20 @@ historial, la sección "Completadas" y que otra pantalla lo ve.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T020 [P] [US2] Escribir en `apps/api/test/acceptance/kitchen-items.acceptance.spec.ts`: `[004] AC-2.1` y `[004] AC-2.2` (cada `advance` cambia el estado y deja una fila en `order_item_status_changes`); `[004] AC-2.3` (`advance` con `from: PENDING` sobre un ítem ya en `PREPARING` → 409 `ITEM_STATE_CONFLICT` con `details.current`; nunca se salta a `READY`); `[004] AC-2.5` (`undo` desde `PREPARING` vuelve a `PENDING` con `isUndo: true`); `[004] AC-2.7` (mozo y cajero reciben 403 `FORBIDDEN` con "No tienes permiso para realizar esta acción" y el estado no cambia). Caso sin ID: dos `advance` simultáneos con el mismo `from` → uno 200 y otro 409
-- [ ] T021 [P] [US2] Agregar a `apps/api/test/acceptance/kitchen-board.acceptance.spec.ts`: `[004] AC-2.4` (al quedar listo el último ítem no anulado, la comanda pasa a `completed` con `completedAt`; con el reloj 31 min después ya no aparece)
-- [ ] T022 [P] [US2] Escribir en `apps/api/test/acceptance/kitchen-realtime.acceptance.spec.ts` (socket.io-client): `[004] AC-2.6` (un socket de cocina y uno de mozo reciben `kitchen:item-status-changed` tras un `advance`)
-- [ ] T023 [P] [US2] Escribir `apps/api/src/kitchen/kitchen-items.service.spec.ts` (unitarias): pasos permitidos y prohibidos, y "Deshacer" fuera de la ventana de 30 min → `UNDO_NOT_ALLOWED`
-- [ ] T024 [P] [US2] Agregar a `KitchenBoardPage.test.tsx`: `[004] AC-2.5` ("Deshacer" abre la confirmación y solo llama a la API al confirmar)
-- [ ] T025 [P] [US2] Agregar a `apps/web/e2e/kitchen.spec.ts`: `[004] AC-2.6` (dos páginas de cocina; "Preparar" en una se ve en la otra en menos de 3 s)
+- [X] T020 [P] [US2] Escribir en `apps/api/test/acceptance/kitchen-items.acceptance.spec.ts`: `[004] AC-2.1` y `[004] AC-2.2` (cada `advance` cambia el estado y deja una fila en `order_item_status_changes`); `[004] AC-2.3` (`advance` con `from: PENDING` sobre un ítem ya en `PREPARING` → 409 `ITEM_STATE_CONFLICT` con `details.current`; nunca se salta a `READY`); `[004] AC-2.5` (`undo` desde `PREPARING` vuelve a `PENDING` con `isUndo: true`); `[004] AC-2.7` (mozo y cajero reciben 403 `FORBIDDEN` con "No tienes permiso para realizar esta acción" y el estado no cambia). Caso sin ID: dos `advance` simultáneos con el mismo `from` → uno 200 y otro 409
+- [X] T021 [P] [US2] Agregar a `apps/api/test/acceptance/kitchen-board.acceptance.spec.ts`: `[004] AC-2.4` (al quedar listo el último ítem no anulado, la comanda pasa a `completed` con `completedAt`; con el reloj 31 min después ya no aparece)
+- [X] T022 [P] [US2] Escribir en `apps/api/test/acceptance/kitchen-realtime.acceptance.spec.ts` (socket.io-client): `[004] AC-2.6` (un socket de cocina y uno de mozo reciben `kitchen:item-status-changed` tras un `advance`)
+- [X] T023 [P] [US2] Escribir `apps/api/src/kitchen/kitchen-rules.spec.ts` (unitarias de las reglas puras de `kitchen-rules.ts`): pasos permitidos, estado de la comanda, ventana de 30 min y cuándo se puede deshacer; el caso `UNDO_NOT_ALLOWED` va en `kitchen-items.acceptance.spec.ts`
+- [X] T024 [P] [US2] Agregar a `KitchenBoardPage.test.tsx`: `[004] AC-2.5` ("Deshacer" abre la confirmación y solo llama a la API al confirmar)
+- [X] T025 [P] [US2] Agregar a `apps/web/e2e/kitchen.spec.ts`: `[004] AC-2.6` (dos páginas de cocina; "Preparar" en una se ve en la otra en menos de 3 s)
 
 ### Implementation for User Story 2
 
-- [ ] T026 [US2] Crear `apps/api/src/kitchen/kitchen-items.service.ts` con `advance(itemId, from, user)` y `undo(itemId, from, user)`: transacción con actualización condicionada por estado, historial, ventana de 30 min y errores `ITEM_STATE_CONFLICT`/`ITEM_VOIDED`/`UNDO_NOT_ALLOWED`; después del commit emite `kitchen:item-status-changed` a `role:KITCHEN` y `role:WAITER` (depende de T004, T005, T008)
-- [ ] T027 [US2] Agregar a `kitchen.controller.ts` `POST /kitchen/items/:itemId/advance` y `POST /kitchen/items/:itemId/undo` con `ZodValidationPipe` y `@Roles(Role.KITCHEN)` (depende de T026)
-- [ ] T028 [US2] Extender `kitchen-board.service.ts` con el estado `COMPLETED`, `completedAt` (último cambio a `READY`), la lista `completed` de los últimos 30 min y `canUndo` por ítem (depende de T014)
-- [ ] T029 [P] [US2] Agregar a `apps/web/src/features/kitchen/api.ts` `useAdvanceItem()` y `useUndoItem()`; ante 409, mostrar el mensaje en español y volver a pedir el tablero; escuchar `kitchen:item-status-changed`
-- [ ] T030 [US2] Agregar a `TicketItemRow.tsx` los botones "Preparar", "Listo" y "Deshacer" (≥ 44×44 px, uno visible por estado) con confirmación para "Deshacer" reutilizando `apps/web/src/components/Modal.tsx`, y crear `CompletedSection.tsx` (depende de T029)
+- [X] T026 [US2] Crear `apps/api/src/kitchen/kitchen-items.service.ts` con `advance(itemId, from, user)` y `undo(itemId, from, user)`: transacción con actualización condicionada por estado, historial, ventana de 30 min y errores `ITEM_STATE_CONFLICT`/`ITEM_VOIDED`/`UNDO_NOT_ALLOWED`; después del commit emite `kitchen:item-status-changed` a `role:KITCHEN` y `role:WAITER` (depende de T004, T005, T008)
+- [X] T027 [US2] Agregar a `kitchen.controller.ts` `POST /kitchen/items/:itemId/advance` y `POST /kitchen/items/:itemId/undo` con `ZodValidationPipe` y `@Roles(Role.KITCHEN)` (depende de T026)
+- [X] T028 [US2] Extender `kitchen-board.service.ts` con el estado `COMPLETED`, `completedAt` (último cambio a `READY`), la lista `completed` de los últimos 30 min y `canUndo` por ítem (depende de T014)
+- [X] T029 [P] [US2] Agregar a `apps/web/src/features/kitchen/api.ts` `useAdvanceItem()` y `useUndoItem()`; ante 409, mostrar el mensaje en español y volver a pedir el tablero; escuchar `kitchen:item-status-changed`
+- [X] T030 [US2] Agregar a `TicketItemRow.tsx` los botones "Preparar", "Listo" y "Deshacer" (≥ 44×44 px, uno visible por estado) con confirmación para "Deshacer" reutilizando `apps/web/src/components/Modal.tsx`, y crear `CompletedSection.tsx` (depende de T029)
 
 **Checkpoint**: US1 y US2 funcionan juntas; la cocina ya reemplaza la comanda de papel.
 
@@ -127,18 +127,18 @@ historial, la sección "Completadas" y que otra pantalla lo ve.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T031 [P] [US3] Escribir en `apps/api/test/acceptance/ready-notices.acceptance.spec.ts`: `[004] AC-3.2` (`seen` cierra el aviso y deja de salir en `GET /api/kitchen/ready-notices`; repetirlo responde 204); `[004] AC-3.3` (un aviso creado sin el mozo conectado aparece en su `GET`); `[004] AC-3.4` (`undo` desde `READY` fija `withdrawnAt`); `[004] AC-3.5` (Juan abrió la mesa y Rosa envió la ronda: el aviso es para Juan; Rosa recibe una lista vacía y 403 al marcar el de Juan como visto)
-- [ ] T032 [P] [US3] Agregar a `kitchen-items.acceptance.spec.ts`: `[004] AC-2.8` (aviso visto → `undo` desde `READY` responde 409 `READY_ALREADY_SEEN` con "El mozo ya recogió este plato")
-- [ ] T033 [P] [US3] Agregar a `kitchen-realtime.acceptance.spec.ts`: `[004] AC-3.1` (el socket de Juan recibe `kitchen:ready-notice` con mesa, plato y cantidad); `[004] AC-3.5` (el socket de Rosa no lo recibe)
-- [ ] T034 [P] [US3] Escribir `apps/web/src/features/kitchen/ready-notices/ReadyNoticesTray.test.tsx`: `[004] AC-3.1` (muestra "Mesa 5: 2 × Ají de gallina — listo"); `[004] AC-3.2` ("Visto" lo quita y llama a la API)
-- [ ] T035 [P] [US3] Agregar a `apps/web/e2e/kitchen.spec.ts`: `[004] AC-3.1` (cocina marca Listo y la página `/mozo` de Juan muestra el aviso sin recargar)
+- [X] T031 [P] [US3] Escribir en `apps/api/test/acceptance/ready-notices.acceptance.spec.ts`: `[004] AC-3.2` (`seen` cierra el aviso y deja de salir en `GET /api/kitchen/ready-notices`; repetirlo responde 204); `[004] AC-3.3` (un aviso creado sin el mozo conectado aparece en su `GET`); `[004] AC-3.4` (`undo` desde `READY` fija `withdrawnAt`); `[004] AC-3.5` (Juan abrió la mesa y Rosa envió la ronda: el aviso es para Juan; Rosa recibe una lista vacía y 403 al marcar el de Juan como visto)
+- [X] T032 [P] [US3] Agregar a `kitchen-items.acceptance.spec.ts`: `[004] AC-2.8` (aviso visto → `undo` desde `READY` responde 409 `READY_ALREADY_SEEN` con "El mozo ya recogió este plato")
+- [X] T033 [P] [US3] Agregar a `kitchen-realtime.acceptance.spec.ts`: `[004] AC-3.1` (el socket de Juan recibe `kitchen:ready-notice` con mesa, plato y cantidad); `[004] AC-3.5` (el socket de Rosa no lo recibe)
+- [X] T034 [P] [US3] Escribir `apps/web/src/features/kitchen/ready-notices/ReadyNoticesTray.test.tsx`: `[004] AC-3.1` (muestra "Mesa 5: 2 × Ají de gallina — listo"); `[004] AC-3.2` ("Visto" lo quita y llama a la API)
+- [X] T035 [P] [US3] Agregar a `apps/web/e2e/kitchen.spec.ts`: `[004] AC-3.1` (cocina marca Listo y la página `/mozo` de Juan muestra el aviso sin recargar)
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Extender `kitchen-items.service.ts`: al pasar a `READY`, crear `ReadyNotice` para `Order.waiterId` con `quantity = toPrepare` y emitir `kitchen:ready-notice` a `user:<id>`; al deshacer un `READY`, rechazar con `READY_ALREADY_SEEN` si el aviso está visto o fijar `withdrawnAt` y emitir `kitchen:ready-notice-closed` con `UNDONE` (depende de T026)
-- [ ] T037 [US3] Crear `apps/api/src/kitchen/ready-notices.service.ts` y `ready-notices.controller.ts` con `GET /kitchen/ready-notices` y `POST /kitchen/ready-notices/:noticeId/seen` (`@Roles(Role.WAITER)`, solo el destinatario, idempotente, emite `kitchen:ready-notice-closed` con `SEEN`) (depende de T036)
-- [ ] T038 [P] [US3] Crear `apps/web/src/features/kitchen/ready-notices/api.ts` (`useReadyNotices`, `useMarkSeen`, escucha `kitchen:ready-notice` y `kitchen:ready-notice-closed`) y `ReadyNoticesTray.tsx` (lista fija y visible, botón "Visto" de ≥ 44 px)
-- [ ] T039 [US3] Montar `<ReadyNoticesTray />` en `apps/web/src/app/AppShell.tsx` solo para el rol mozo (depende de T038)
+- [X] T036 [US3] Extender `kitchen-items.service.ts`: al pasar a `READY`, crear `ReadyNotice` para `Order.waiterId` con `quantity = toPrepare` y emitir `kitchen:ready-notice` a `user:<id>`; al deshacer un `READY`, rechazar con `READY_ALREADY_SEEN` si el aviso está visto o fijar `withdrawnAt` y emitir `kitchen:ready-notice-closed` con `UNDONE` (depende de T026)
+- [X] T037 [US3] Crear `apps/api/src/kitchen/ready-notices.service.ts` y `ready-notices.controller.ts` con `GET /kitchen/ready-notices` y `POST /kitchen/ready-notices/:noticeId/seen` (`@Roles(Role.WAITER)`, solo el destinatario, idempotente, emite `kitchen:ready-notice-closed` con `SEEN`) (depende de T036)
+- [X] T038 [P] [US3] Crear `apps/web/src/features/kitchen/ready-notices/api.ts` (`useReadyNotices`, `useMarkSeen`, escucha `kitchen:ready-notice` y `kitchen:ready-notice-closed`) y `ReadyNoticesTray.tsx` (lista fija y visible, botón "Visto" de ≥ 44 px)
+- [X] T039 [US3] Montar `<ReadyNoticesTray />` en `apps/web/src/app/AppShell.tsx` solo para el rol mozo (depende de T038)
 
 **Checkpoint**: el mozo ya no tiene que ir a preguntar a cocina.
 
@@ -152,13 +152,13 @@ historial, la sección "Completadas" y que otra pantalla lo ve.
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T040 [P] [US4] Agregar a `KitchenBoardPage.test.tsx` con relojes falsos: `[004] AC-4.1` (el contador sube sin recargar); `[004] AC-4.2` (a los 15 min "Demorado", a los 25 min "Muy demorado", siempre con texto)
-- [ ] T041 [P] [US4] Agregar a `kitchen-board.acceptance.spec.ts`: `[004] AC-4.3` (una comanda completada trae `completedAt` y su tiempo total `completedAt − sentAt`)
+- [X] T040 [P] [US4] Agregar a `KitchenBoardPage.test.tsx` con relojes falsos: `[004] AC-4.1` (el contador sube sin recargar); `[004] AC-4.2` (a los 15 min "Demorado", a los 25 min "Muy demorado", siempre con texto)
+- [X] T041 [P] [US4] Agregar a `kitchen-board.acceptance.spec.ts`: `[004] AC-4.3` (una comanda completada trae `completedAt` y su tiempo total `completedAt − sentAt`)
 
 ### Implementation for User Story 4
 
-- [ ] T042 [P] [US4] Crear `apps/web/src/features/kitchen/useServerClock.ts` (desfase con `serverTime`, recalcula cada 15 s) y `WaitBadge.tsx` (minutos, ámbar ≥ 15, rojo ≥ 25, texto siempre visible, contraste AA)
-- [ ] T043 [US4] Mostrar `WaitBadge` en `TicketCard.tsx` (activas) y el tiempo total en `CompletedSection.tsx` (depende de T042)
+- [X] T042 [P] [US4] Crear `apps/web/src/features/kitchen/useServerClock.ts` (desfase con `serverTime`, recalcula cada 15 s) y `WaitBadge.tsx` (minutos, ámbar ≥ 15, rojo ≥ 25, texto siempre visible, contraste AA)
+- [X] T043 [US4] Mostrar `WaitBadge` en `TicketCard.tsx` (activas) y el tiempo total en `CompletedSection.tsx` (depende de T042)
 
 ---
 
@@ -171,23 +171,23 @@ verifica la comanda, el aviso y la confirmación.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T044 [P] [US5] Agregar a `kitchen-board.acceptance.spec.ts`: `[004] AC-5.1` (ítem con todas sus unidades anuladas → `VOIDED`; `advance` responde 409 `ITEM_VOIDED`); `[004] AC-5.2` (3 rocotos, 1 anulado → `toPrepare: 2`, `voidedQuantity: 1`, mismo estado); `[004] AC-5.3` (con un ítem anulado, la comanda se completa al quedar listos los demás); `[004] AC-5.4` (comanda totalmente anulada sigue en `active` con estado `VOIDED` hasta confirmar todas sus anulaciones)
-- [ ] T045 [P] [US5] Agregar a `kitchen-realtime.acceptance.spec.ts`: `[004] AC-5.5` (la anulación aparece en `voidNotices`; `ack` responde 204, es idempotente y emite `kitchen:void-acknowledged` a otro socket de cocina)
-- [ ] T046 [P] [US5] Agregar a `KitchenBoardPage.test.tsx`: `[004] AC-5.1` (ítem tachado con "ANULADO" y sin botones); `[004] AC-5.2` ("Preparar 2 · 1 anulada"); `[004] AC-5.5` (aviso "Mesa 4: 1 × Rocoto relleno anulado" arriba, con sonido, hasta tocar "Entendido")
+- [X] T044 [P] [US5] Agregar a `kitchen-board.acceptance.spec.ts`: `[004] AC-5.1` (ítem con todas sus unidades anuladas → `VOIDED`; `advance` responde 409 `ITEM_VOIDED`); `[004] AC-5.2` (3 rocotos, 1 anulado → `toPrepare: 2`, `voidedQuantity: 1`, mismo estado); `[004] AC-5.3` (con un ítem anulado, la comanda se completa al quedar listos los demás); `[004] AC-5.4` (comanda totalmente anulada sigue en `active` con estado `VOIDED` hasta confirmar todas sus anulaciones)
+- [X] T045 [P] [US5] Agregar a `kitchen-realtime.acceptance.spec.ts`: `[004] AC-5.5` (la anulación aparece en `voidNotices`; `ack` responde 204, es idempotente y emite `kitchen:void-acknowledged` a otro socket de cocina)
+- [X] T046 [P] [US5] Agregar a `KitchenBoardPage.test.tsx`: `[004] AC-5.1` (ítem tachado con "ANULADO" y sin botones); `[004] AC-5.2` ("2 × Rocoto relleno" con "1 anulada"); `[004] AC-5.5` (aviso "Mesa 4: 1 × Rocoto relleno anulado" arriba, con sonido, hasta tocar "Entendido")
 
 ### Implementation for User Story 5
 
-- [ ] T047 [US5] Extender `kitchen-board.service.ts` con `voidNotices` (anulaciones sin `KitchenVoidAck`, en orden de llegada) y el estado `VOIDED` de la comanda mientras falte alguna confirmación (depende de T014)
-- [ ] T048 [US5] Agregar a `kitchen.controller.ts` `POST /kitchen/void-notices/:itemVoidId/ack` (`@Roles(Role.KITCHEN)`, `upsert` idempotente) que emite `kitchen:void-acknowledged` a `role:KITCHEN` (depende de T047)
-- [ ] T049 [P] [US5] Crear `apps/web/src/features/kitchen/VoidNoticesBar.tsx` (avisos apilados arriba, sonido al aparecer uno nuevo, botón "Entendido") y agregar `useAckVoid()` en `api.ts`
-- [ ] T050 [US5] Mostrar en `TicketItemRow.tsx` el ítem anulado (tachado, "ANULADO", sin botones) y la anulación parcial ("Preparar N · M anulada(s)"), y en `TicketCard.tsx` el estado "Comanda anulada" (depende de T049)
+- [X] T047 [US5] Extender `kitchen-board.service.ts` con `voidNotices` (anulaciones sin `KitchenVoidAck`, en orden de llegada) y el estado `VOIDED` de la comanda mientras falte alguna confirmación (depende de T014)
+- [X] T048 [US5] Agregar a `kitchen.controller.ts` `POST /kitchen/void-notices/:itemVoidId/ack` (`@Roles(Role.KITCHEN)`, idempotente con `createMany` y `skipDuplicates` en `void-notices.service.ts`) que emite `kitchen:void-acknowledged` a `role:KITCHEN` (depende de T047)
+- [X] T049 [P] [US5] Crear `apps/web/src/features/kitchen/VoidNoticesBar.tsx` (avisos apilados arriba, sonido al aparecer uno nuevo, botón "Entendido") y agregar `useAcknowledgeVoid()` en `api.ts`
+- [X] T050 [US5] Mostrar en `TicketItemRow.tsx` el ítem anulado (tachado, "ANULADO", sin botones) y la anulación parcial ("N × plato" con "M anulada(s)"), y en `TicketCard.tsx` el estado "Comanda anulada" (depende de T049)
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T051 [P] Agregar a `apps/web/e2e/kitchen.spec.ts` la verificación de tablet (Principio IV): `/cocina` y la bandeja del mozo sin desplazamiento horizontal en 768×1024 y 1366×1024, y botones de al menos 44×44 px
-- [ ] T052 [P] Revisar que todos los textos nuevos estén en español y que las horas usen `es-PE` (Principio III)
+- [ ] T051 [P] Verificación de tablet (Principio IV): `/cocina` sin desplazamiento horizontal en 768×1024 y 1366×1024 y botones de al menos 44×44 px. La cubre `apps/web/e2e/tablet.spec.ts` de la 001, que ya recorre `/cocina` y ahora prueba la pantalla real
+- [X] T052 [P] Revisar que todos los textos nuevos estén en español y que las horas usen `es-PE` (Principio III)
 - [ ] T053 Ejecutar `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` y `npm run check:ac -- 004` (resultado esperado: 28/28)
 - [ ] T054 Recorrer la validación manual de [quickstart.md](quickstart.md) y guardar capturas para el informe (sección 5.3)
 - [ ] T055 Abrir el PR de `004-cocina` hacia `main` con la lista de comprobación de puertas de calidad y asignar la revisión al responsable de la 003
