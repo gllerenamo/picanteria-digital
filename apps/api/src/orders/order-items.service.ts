@@ -2,7 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import type { AddOrderItemRequest, OrderItemResponse, UpdateOrderItemRequest } from '@picanteria/shared';
 import type { Prisma } from '@prisma/client';
 import { AppException } from '../common/app.exception';
+import { TablesService } from '../menu/tables.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { lockOpenOrder } from './order-locks';
 import { ORDER_ITEM_INCLUDE, toOrderItem } from './order-mapper';
 import { normalizeNotes } from './params';
@@ -12,18 +14,30 @@ type Tx = Prisma.TransactionClient;
 /** Ítems por enviar: agregar, cambiar y quitar sin autorización de nadie (FR-010 a FR-013). */
 @Injectable()
 export class OrderItemsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tables: TablesService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
+  /**
+   * Agrega un borrador. Con la mesa por cobrar exige `confirmReopen` y, en la misma
+   * transacción, la devuelve a ocupada (FR-034, research.md §14).
+   */
   async add(orderId: string, input: AddOrderItemRequest): Promise<OrderItemResponse> {
-    const item = await this.prisma.$transaction(async (tx) => {
+    const { item, reopenedTable } = await this.prisma.$transaction(async (tx) => {
       const order = await lockOpenOrder(tx, orderId);
       const table = await tx.diningTable.findUniqueOrThrow({ where: { id: order.tableId } });
+      let reopened: { id: string; tableNumber: number } | null = null;
       if (table.status === 'POR_COBRAR') {
-        // La reapertura con confirmación llega con la Historia 6.
-        throw new AppException('TABLE_AWAITING_PAYMENT', HttpStatus.CONFLICT);
+        if (input.confirmReopen !== true) throw new AppException('TABLE_AWAITING_PAYMENT', HttpStatus.CONFLICT);
+        if (!(await this.tables.transition(tx, table.id, ['POR_COBRAR'], 'OCUPADA'))) {
+          throw new AppException('TABLE_STATE_CONFLICT', HttpStatus.CONFLICT, { details: { current: table.status } });
+        }
+        reopened = { id: table.id, tableNumber: table.tableNumber };
       }
       await this.assertAvailable(tx, input.menuItemId);
-      return tx.orderItem.create({
+      const created = await tx.orderItem.create({
         data: {
           orderId,
           menuItemId: input.menuItemId,
@@ -32,7 +46,18 @@ export class OrderItemsService {
         },
         include: ORDER_ITEM_INCLUDE,
       });
+      return { item: created, reopenedTable: reopened };
     });
+
+    if (reopenedTable) {
+      this.realtime.emitToRoles(['WAITER', 'CASHIER'], 'orders:table-status-changed', {
+        tableId: reopenedTable.id,
+        tableNumber: reopenedTable.tableNumber,
+        status: 'OCUPADA',
+        orderId,
+        changedAt: new Date().toISOString(),
+      });
+    }
     return toOrderItem(item);
   }
 

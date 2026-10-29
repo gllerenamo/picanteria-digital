@@ -122,6 +122,15 @@ export function useSendToKitchen(orderId: string) {
   });
 }
 
+/** Mesa por cobrar (FR-033). */
+export function useRequestBill(orderId: string) {
+  const invalidate = useInvalidateOrders();
+  return useMutation({
+    mutationFn: () => requestJson('POST', `/api/orders/${orderId}/request-bill`, orderDetailSchema),
+    onSettled: invalidate,
+  });
+}
+
 /** Anulación de un ítem enviado; solo el administrador (FR-028). */
 export function useVoidItem() {
   const invalidate = useInvalidateOrders();

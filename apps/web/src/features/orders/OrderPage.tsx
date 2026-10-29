@@ -1,20 +1,21 @@
+import type { OrderItemResponse } from '@picanteria/shared';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { ConnectionBanner } from '../../components/ConnectionBanner';
 import { Modal } from '../../components/Modal';
 import { ApiError } from '../../lib/api-client';
+import { useCurrentUser } from '../auth/session';
 import { ConfirmDialog } from '../users/ConfirmDialog';
-import { ConnectionBanner } from '../../components/ConnectionBanner';
-import { useAddItem, useCancelOpening, useOrder, useSendToKitchen, useUpdateGuests } from './api';
+import { useAddItem, useCancelOpening, useOrder, useRequestBill, useSendToKitchen, useUpdateGuests } from './api';
+import { ConsumptionSummary } from './ConsumptionSummary';
 import { DraftItems } from './DraftItems';
 import { GuestCountStepper } from './GuestCountStepper';
 import { MenuPicker, type NewItem } from './MenuPicker';
-import type { OrderItemResponse } from '@picanteria/shared';
-import { useCurrentUser } from '../auth/session';
 import { hasPendingKey } from './pending-dispatch';
 import { SentItems } from './SentItems';
-import { VoidItemDialog } from './VoidItemDialog';
 import { TABLE_STATUS_LABELS } from './table-status';
 import { useOrdersRealtime } from './useOrdersRealtime';
+import { VoidItemDialog } from './VoidItemDialog';
 
 const errorMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
@@ -39,6 +40,10 @@ function OrderView({ orderId }: { orderId: string }) {
   const cancelOpening = useCancelOpening(orderId);
   const addItem = useAddItem(orderId);
   const sendToKitchen = useSendToKitchen(orderId);
+  const requestBill = useRequestBill(orderId);
+  const [confirmBill, setConfirmBill] = useState(false);
+  /** Ítem que se quiso agregar con la mesa por cobrar: espera la confirmación de reapertura. */
+  const [pendingReopen, setPendingReopen] = useState<NewItem | null>(null);
   const [editingGuests, setEditingGuests] = useState<number | null | undefined>(undefined);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,13 +59,25 @@ function OrderView({ orderId }: { orderId: string }) {
   const isOpen = order.status === 'OPEN';
   const drafts = order.items.filter((item) => item.status === 'DRAFT');
 
-  const onAdd = (item: NewItem) => {
+  const onAdd = (item: NewItem, confirmReopen = false) => {
     setNotice(null);
-    addItem.mutate(item, {
-      onError: (error) => {
-        setNotice(errorMessage(error));
+    addItem.mutate(
+      { ...item, confirmReopen },
+      {
+        onSuccess: () => {
+          setPendingReopen(null);
+        },
+        onError: (error) => {
+          // Mesa por cobrar: se pide confirmación para volver a abrirla (FR-034, AC-6.7).
+          if (error instanceof ApiError && error.code === 'TABLE_AWAITING_PAYMENT') {
+            setPendingReopen(item);
+          } else {
+            setPendingReopen(null);
+            setNotice(errorMessage(error));
+          }
+        },
       },
-    });
+    );
   };
 
   const onSend = () => {
@@ -147,6 +164,19 @@ function OrderView({ orderId }: { orderId: string }) {
             </div>
           )}
           <SentItems order={order} onVoid={isAdmin && isOpen ? setVoiding : undefined} />
+          <ConsumptionSummary order={order} />
+          {/* Sin acción para liberar la mesa: solo Caja la libera al cobrar (AC-6.5). */}
+          {isOpen && table.status === 'OCUPADA' && (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmBill(true);
+              }}
+              className="touch-target rounded-lg border-2 border-ink px-5 py-3 text-xl font-bold active:bg-line"
+            >
+              Pedir la cuenta
+            </button>
+          )}
         </div>
       </div>
 
@@ -185,6 +215,41 @@ function OrderView({ orderId }: { orderId: string }) {
             </button>
           </div>
         </Modal>
+      )}
+
+      {confirmBill && (
+        <ConfirmDialog
+          title="Pedir la cuenta"
+          message={`¿Pedir la cuenta de la mesa ${String(table.tableNumber)}?`}
+          pending={requestBill.isPending}
+          error={requestBill.isError ? errorMessage(requestBill.error) : null}
+          onCancel={() => {
+            setConfirmBill(false);
+            requestBill.reset();
+          }}
+          onConfirm={() => {
+            requestBill.mutate(undefined, {
+              onSuccess: () => {
+                setConfirmBill(false);
+              },
+            });
+          }}
+        />
+      )}
+
+      {pendingReopen && (
+        <ConfirmDialog
+          title="Mesa por cobrar"
+          message="La mesa está por cobrar. ¿Volver a abrirla para agregar?"
+          pending={addItem.isPending}
+          error={null}
+          onCancel={() => {
+            setPendingReopen(null);
+          }}
+          onConfirm={() => {
+            onAdd(pendingReopen, true);
+          }}
+        />
       )}
 
       {voiding && (

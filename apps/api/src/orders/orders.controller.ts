@@ -68,6 +68,13 @@ export class OrdersController {
   }
 
   @Roles('WAITER')
+  @Post(':orderId/request-bill')
+  @HttpCode(HttpStatus.OK)
+  requestBill(@Param('orderId', OrderIdPipe) orderId: string, @CurrentUser() auth: SessionContext): Promise<OrderDetail> {
+    return this.orders.requestBill(orderId, auth.user);
+  }
+
+  @Roles('WAITER')
   @Post(':orderId/cancel')
   @HttpCode(HttpStatus.NO_CONTENT)
   cancel(@Param('orderId', OrderIdPipe) orderId: string, @CurrentUser() auth: SessionContext): Promise<void> {

@@ -312,14 +312,14 @@ para mozos y caja, ningún mozo puede liberarla y, al agregar algo, vuelve a ocu
 
 ### Implementation for User Story 6
 
-- [ ] T057 [US6] Agregar a `orders.service.ts` `requestBill(orderId)` con `lockOpenOrder` (depende de T022):
+- [X] T057 [US6] Agregar a `orders.service.ts` `requestBill(orderId)` con `lockOpenOrder` (depende de T022):
   - con borradores, `409 HAS_UNSENT_ITEMS`;
   - sin unidades vigentes enviadas, `409 NO_CONSUMPTION`;
   - `transition(['OCUPADA'], 'POR_COBRAR')`, si no `409 TABLE_STATE_CONFLICT` con `details.current`;
   - después del commit emite `orders:table-status-changed`.
-- [ ] T058 [US6] Extender `add` en `order-items.service.ts`: con la mesa `POR_COBRAR`, si no llega `confirmReopen: true` sigue respondiendo `409 TABLE_AWAITING_PAYMENT`; si llega, en la misma transacción hace `transition(['POR_COBRAR'], 'OCUPADA')` y crea el ítem, y después del commit emite `orders:table-status-changed` (depende de T030)
-- [ ] T059 [US6] Agregar a `orders.controller.ts` `POST orders/:orderId/request-bill` (200, `@Roles('WAITER')`) (depende de T057)
-- [ ] T060 [US6] Agregar `useRequestBill` a `apps/web/src/features/orders/api.ts`. En `OrderPage.tsx` (depende de T033, T046):
+- [X] T058 [US6] Extender `add` en `order-items.service.ts`: con la mesa `POR_COBRAR`, si no llega `confirmReopen: true` sigue respondiendo `409 TABLE_AWAITING_PAYMENT`; si llega, en la misma transacción hace `transition(['POR_COBRAR'], 'OCUPADA')` y crea el ítem, y después del commit emite `orders:table-status-changed` (depende de T030)
+- [X] T059 [US6] Agregar a `orders.controller.ts` `POST orders/:orderId/request-bill` (200, `@Roles('WAITER')`) (depende de T057)
+- [X] T060 [US6] Agregar `useRequestBill` a `apps/web/src/features/orders/api.ts`. En `OrderPage.tsx` (depende de T033, T046):
   - crear `apps/web/src/features/orders/ConsumptionSummary.tsx`;
   - "Pedir la cuenta", visible si `canRequestBill`, con la confirmación "¿Pedir la cuenta de la mesa N?";
   - en `useAddItem`, el diálogo de reapertura ante `TABLE_AWAITING_PAYMENT`.
