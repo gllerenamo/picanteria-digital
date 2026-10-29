@@ -57,7 +57,7 @@ endpoints, 1 evento nuevo, 30 criterios de aceptación.
 |--------------------------|--------------------------|--------|
 | **I. TypeScript estricto** | Esquemas Zod en `packages/shared/src/schemas/billing.ts` para cada petición y respuesta; filas de `$queryRaw` tipadas; montos en céntimos enteros. | ✅ |
 | **II. Pruebas de criterios de aceptación** | Los 30 `AC-x.y` tienen capa asignada (tabla abajo); títulos `[005] AC-x.y`; se agrega `005` al paso `check:ac` del CI. | ✅ |
-| **III. Interfaz en español** | Mensajes de los 10 códigos de error nuevos en `ERROR_MESSAGES`; etiquetas Efectivo, Yape/Plin, Tarjeta; `S/ 0.00` y fechas día/mes/año. | ✅ |
+| **III. Interfaz en español** | Mensajes de los 11 códigos de error nuevos en `ERROR_MESSAGES`; etiquetas Efectivo, Yape/Plin, Tarjeta; `S/ 0.00` y fechas día/mes/año. | ✅ |
 | **IV. Tablet para mozo y cocina** | Caja no es vista de mozo ni cocina, pero sigue las mismas reglas (44 px, sin scroll horizontal desde 768 px) y la liberación de mesa llega en vivo a la vista del mozo. | ✅ |
 | **Stack** | Mismo stack; migración versionada; sin secretos nuevos. | ✅ |
 | **Flujo y puertas de calidad** | Rama `005-caja-reportes`, un PR al terminar; typecheck, lint, pruebas y `check:ac -- 005`. | ✅ |
@@ -105,7 +105,7 @@ specs/005-caja-reportes/
 ```text
 packages/shared/src/
 ├── schemas/billing.ts       # PaymentMethod, CreatePayment, CreateSplit, ClosureCounts, AccountDetail, SalesReport, TopDish…
-├── errors.ts                # + 10 códigos de Caja con mensaje en español
+├── errors.ts                # + 11 códigos de Caja con mensaje en español
 ├── events.ts                # + billing:account-updated
 └── roles.ts                 # + /admin/reportes (solo ADMIN)
 
