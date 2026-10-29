@@ -63,6 +63,30 @@ export class OrdersService {
     return toOrderDetail(order, viewer);
   }
 
+  /** Mesa `OCUPADA → POR_COBRAR` si no hay nada por enviar y hay consumo (FR-033). */
+  async requestBill(orderId: string, viewer: Viewer): Promise<OrderDetail> {
+    const order = await this.prisma.$transaction(async (tx) => {
+      const locked = await lockOpenOrder(tx, orderId);
+      const items = await tx.orderItem.findMany({
+        where: { orderId },
+        select: { status: true, quantity: true, voidedQuantity: true },
+      });
+      if (items.some((item) => item.status === 'DRAFT')) {
+        throw new AppException('HAS_UNSENT_ITEMS', HttpStatus.CONFLICT);
+      }
+      if (!items.some((item) => item.status !== 'VOIDED' && item.quantity > item.voidedQuantity)) {
+        throw new AppException('NO_CONSUMPTION', HttpStatus.CONFLICT);
+      }
+      if (!(await this.tables.transition(tx, locked.tableId, ['OCUPADA'], 'POR_COBRAR'))) {
+        const table = await tx.diningTable.findUniqueOrThrow({ where: { id: locked.tableId } });
+        throw new AppException('TABLE_STATE_CONFLICT', HttpStatus.CONFLICT, { details: { current: table.status } });
+      }
+      return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: ORDER_DETAIL_INCLUDE });
+    });
+    this.tableStatusChanged({ tableId: order.tableId, tableNumber: order.table.tableNumber, status: 'POR_COBRAR', orderId });
+    return toOrderDetail(order, viewer);
+  }
+
   /** El responsable (o un administrador) cancela una apertura sin nada enviado (FR-006). */
   async cancel(orderId: string, viewer: Viewer): Promise<void> {
     const order = await this.prisma.$transaction(async (tx) => {

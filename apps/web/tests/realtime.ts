@@ -13,7 +13,7 @@ export function fakeRealtime(): {
   // Solo se usan on/off, que EventEmitter implementa con la misma forma.
   const socket = emitter as unknown as RealtimeSocket;
   return {
-    state: { socket, connected: true },
+    state: { socket, status: 'connected' },
     emit: (event, payload) => {
       emitter.emit(event, payload);
     },

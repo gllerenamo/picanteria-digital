@@ -156,12 +156,12 @@ corrige sin pedir permiso antes de enviarlo.
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] Crear `apps/api/src/orders/order-items.service.ts`; todas las operaciones usan `lockOpenOrder` (depende de T011, T012):
+- [X] T030 [US2] Crear `apps/api/src/orders/order-items.service.ts`; todas las operaciones usan `lockOpenOrder` (depende de T011, T012):
   - `add(orderId, dto)`: el plato debe tener `isAvailable` e `isActive`, si no `409 MENU_ITEM_UNAVAILABLE`; crea el ítem `DRAFT` con `notes` recortada. Con la mesa `POR_COBRAR` responde por ahora `409 TABLE_AWAITING_PAYMENT`; la reapertura llega en US6.
   - `update(itemId, dto)` y `remove(itemId)`: solo `DRAFT`, si no `409 ITEM_ALREADY_SENT`; `remove` borra la fila y no emite eventos.
-- [ ] T031 [US2] Agregar `POST orders/:orderId/items` (201, `@Roles('WAITER')`) a `orders.controller.ts` y crear `apps/api/src/orders/order-items.controller.ts` con `PATCH order-items/:itemId` y `DELETE order-items/:itemId` (204), y registrarlo en el módulo (depende de T030)
-- [ ] T032 [P] [US2] Agregar a `apps/web/src/features/orders/api.ts` `useMenuForOrder` (`GET /api/menu/tree?availableOnly=true`), `useAddItem`, `useUpdateItem` y `useRemoveItem`
-- [ ] T033 [US2] Crear `apps/web/src/features/orders/MenuPicker.tsx` (categorías, plato con precio, cantidad con +/− de 44 px, nota opcional con contador de 140 caracteres, "Agregar") y `DraftItems.tsx` (sección "Por enviar": cantidad editable, editar nota, "Quitar" con `ConfirmDialog`, marca "No disponible" si `isAvailable` es falso), e integrarlos en `OrderPage.tsx`, apilados en vertical y lado a lado en 1366 px (depende de T032)
+- [X] T031 [US2] Agregar `POST orders/:orderId/items` (201, `@Roles('WAITER')`) a `orders.controller.ts` y crear `apps/api/src/orders/order-items.controller.ts` con `PATCH order-items/:itemId` y `DELETE order-items/:itemId` (204), y registrarlo en el módulo (depende de T030)
+- [X] T032 [P] [US2] Agregar a `apps/web/src/features/orders/api.ts` `useMenuForOrder` (`GET /api/menu/tree?availableOnly=true`), `useAddItem`, `useUpdateItem` y `useRemoveItem`
+- [X] T033 [US2] Crear `apps/web/src/features/orders/MenuPicker.tsx` (categorías, plato con precio, cantidad con +/− de 44 px, nota opcional con contador de 140 caracteres, "Agregar") y `DraftItems.tsx` (sección "Por enviar": cantidad editable, editar nota, "Quitar" con `ConfirmDialog`, marca "No disponible" si `isAvailable` es falso), e integrarlos en `OrderPage.tsx`, apilados en vertical y lado a lado en 1366 px (depende de T032)
 
 **Checkpoint**: el pedido se toma sin papel; todavía no sale a cocina.
 
@@ -200,8 +200,8 @@ orden de confirmación, y un reintento con la misma clave no duplica.
 
 ### Implementation for User Story 3
 
-- [ ] T038 [P] [US3] Crear `apps/api/src/orders/idempotency-key.decorator.ts`: decorador de parámetro que lee `Idempotency-Key` y la valida con `idempotencyKeySchema`; si falta o no es válida, `400 VALIDATION_ERROR` con `details { 'Idempotency-Key': 'Falta la clave de envío' }`
-- [ ] T039 [US3] Crear `apps/api/src/orders/dispatches.service.ts` con `send(orderId, key, user)` en una transacción ([research.md §4 a §6, §8](research.md)) (depende de T011, T012, T030):
+- [X] T038 [P] [US3] Crear `apps/api/src/orders/idempotency-key.decorator.ts`: decorador de parámetro que lee `Idempotency-Key` y la valida con `idempotencyKeySchema`; si falta o no es válida, `400 VALIDATION_ERROR` con `details { 'Idempotency-Key': 'Falta la clave de envío' }`
+- [X] T039 [US3] Crear `apps/api/src/orders/dispatches.service.ts` con `send(orderId, key, user)` en una transacción ([research.md §4 a §6, §8](research.md)) (depende de T011, T012, T030):
   1. `acquireDispatchLock`.
   2. Buscar la clave: en el mismo pedido devuelve ese envío sin emitir; en otro pedido, `409 IDEMPOTENCY_KEY_REUSED`.
   3. `lockOpenOrder`.
@@ -211,14 +211,14 @@ orden de confirmación, y un reintento con la misma clave no duplica.
   7. Crear el `KitchenDispatch`.
   8. Una sola sentencia SQL pasa los borradores a `PENDING` con `dispatch_id` y `unit_price = menu_items.price`.
   - Un `P2002` sobre la clave se resuelve releyendo el envío. Después del commit, y solo si se creó, `emitToRoles(['KITCHEN', 'WAITER'], 'orders:dispatch-sent', …)`.
-- [ ] T040 [US3] Crear `apps/api/src/orders/dispatches.controller.ts` con `POST orders/:orderId/dispatches` (201, `@Roles('WAITER')`, `@IdempotencyKey()`) y registrarlo en el módulo (depende de T038, T039)
-- [ ] T041 [P] [US3] Crear `apps/web/src/features/orders/pending-dispatch.ts`: `getOrCreateKey(orderId)` y `clearKey(orderId)` sobre `sessionStorage` con `try/catch` (con respaldo en memoria si falla), y la clave UUID v4 generada con `crypto.getRandomValues` (no `crypto.randomUUID`, que no existe en `http://` de la red local)
-- [ ] T042 [US3] Agregar a `apps/web/src/features/orders/api.ts` `useSendToKitchen(orderId)` (depende de T014, T041):
+- [X] T040 [US3] Crear `apps/api/src/orders/dispatches.controller.ts` con `POST orders/:orderId/dispatches` (201, `@Roles('WAITER')`, `@IdempotencyKey()`) y registrarlo en el módulo (depende de T038, T039)
+- [X] T041 [P] [US3] Crear `apps/web/src/features/orders/pending-dispatch.ts`: `getOrCreateKey(orderId)` y `clearKey(orderId)` sobre `sessionStorage` con `try/catch` (con respaldo en memoria si falla), y la clave UUID v4 generada con `crypto.getRandomValues` (no `crypto.randomUUID`, que no existe en `http://` de la red local)
+- [X] T042 [US3] Agregar a `apps/web/src/features/orders/api.ts` `useSendToKitchen(orderId)` (depende de T014, T041):
   - envía con la cabecera `Idempotency-Key` de `getOrCreateKey`;
   - `clearKey` ante 201 o un 409 definitivo (`NOTHING_TO_SEND`, `ITEMS_UNAVAILABLE`, `ORDER_NOT_OPEN`, `IDEMPOTENCY_KEY_REUSED`);
   - conserva la clave ante `NETWORK_ERROR` o 5xx;
   - siempre invalida `['orders']`.
-- [ ] T043 [US3] Si no existe, crear `apps/web/src/components/ConnectionBanner.tsx` con `useRealtimeStatus` y `navigator.onLine`, que muestre "Sin conexión. Lo enviado está a salvo; para enviar a cocina necesitas conexión."; montarlo en `TablesBoardPage.tsx` y `OrderPage.tsx` y agregar a `OrderPage.tsx` el botón "Enviar a cocina" (deshabilitado sin borradores), que pasa a "Reintentar" tras un error de red, más los mensajes de [contracts/ui-routes.md](contracts/ui-routes.md) (depende de T042)
+- [X] T043 [US3] Si no existe, crear `apps/web/src/components/ConnectionBanner.tsx` con `useRealtimeStatus` y `navigator.onLine`, que muestre "Sin conexión. Lo enviado está a salvo; para enviar a cocina necesitas conexión."; montarlo en `TablesBoardPage.tsx` y `OrderPage.tsx` y agregar a `OrderPage.tsx` el botón "Enviar a cocina" (deshabilitado sin borradores), que pasa a "Reintentar" tras un error de red, más los mensajes de [contracts/ui-routes.md](contracts/ui-routes.md) (depende de T042)
 
 **Checkpoint**: US1 a US3 forman el producto mínimo: de la mesa a la cocina sin papel.
 
@@ -241,7 +241,7 @@ ve cada cambio sin recargar. Los avisos los prueba la 004 (AC-3.1, AC-3.3 y AC-3
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] Crear `apps/web/src/features/orders/SentItems.tsx` (agrupado por ronda; etiqueta de estado con texto y color AA; unidades anuladas con su motivo) e integrarlo en `OrderPage.tsx`; comprobar que `useOrdersRealtime` (T025) escucha `kitchen:item-status-changed` con la constante de `events.ts` (depende de T025, T043)
+- [X] T046 [US4] Crear `apps/web/src/features/orders/SentItems.tsx` (agrupado por ronda; etiqueta de estado con texto y color AA; unidades anuladas con su motivo) e integrarlo en `OrderPage.tsx`; comprobar que `useOrdersRealtime` (T025) escucha `kitchen:item-status-changed` con la constante de `events.ts` (depende de T025, T043)
 
 **Checkpoint**: el mozo sigue sus platos sin ir a preguntar; los avisos llegan con la 004.
 
@@ -270,14 +270,14 @@ evento, el mozo ve el ítem anulado y el consumo baja.
 
 ### Implementation for User Story 5
 
-- [ ] T050 [US5] Crear `apps/api/src/orders/voids.service.ts` con `void(itemId, dto, admin)` en una transacción ([research.md §7](research.md)) (depende de T011, T012):
+- [X] T050 [US5] Crear `apps/api/src/orders/voids.service.ts` con `void(itemId, dto, admin)` en una transacción ([research.md §7](research.md)) (depende de T011, T012):
   - El pedido debe estar `OPEN`, si no `409 ORDER_NOT_OPEN`.
   - Con `$queryRaw`: `UPDATE order_items SET voided_quantity = voided_quantity + $units, status = CASE WHEN voided_quantity + $units = quantity THEN 'VOIDED' ELSE status END WHERE id = $id AND status IN ('PENDING','PREPARING') AND quantity - voided_quantity >= $units RETURNING …`.
   - Insertar el `ItemVoid`.
   - Si no se actualizó nada, releer el ítem y responder `409 ITEM_NOT_VOIDABLE` con `details { reason, remainingQuantity }`; el mensaje para `READY` es "El plato ya está listo; no se puede anular".
   - Después del commit, `emitToRoles(['KITCHEN', 'WAITER'], 'orders:item-voided', …)`.
-- [ ] T051 [US5] Agregar a `order-items.controller.ts` `POST order-items/:itemId/voids` (201, `@Roles('ADMIN')`, `ZodValidationPipe(voidOrderItemSchema)`) (depende de T050)
-- [ ] T052 [US5] Agregar `useVoidItem` a `apps/web/src/features/orders/api.ts` y crear `apps/web/src/features/orders/VoidItemDialog.tsx` (unidades con +/−, de 1 a las que quedan, todas por defecto; motivo obligatorio de 3 a 200 caracteres; confirmación); mostrar "Anular" en `SentItems.tsx` solo si el usuario es ADMIN y el ítem está `PENDING` o `PREPARING` con unidades vigentes (depende de T046)
+- [X] T051 [US5] Agregar a `order-items.controller.ts` `POST order-items/:itemId/voids` (201, `@Roles('ADMIN')`, `ZodValidationPipe(voidOrderItemSchema)`) (depende de T050)
+- [X] T052 [US5] Agregar `useVoidItem` a `apps/web/src/features/orders/api.ts` y crear `apps/web/src/features/orders/VoidItemDialog.tsx` (unidades con +/−, de 1 a las que quedan, todas por defecto; motivo obligatorio de 3 a 200 caracteres; confirmación); mostrar "Anular" en `SentItems.tsx` solo si el usuario es ADMIN y el ítem está `PENDING` o `PREPARING` con unidades vigentes (depende de T046)
 
 **Checkpoint**: las correcciones quedan en el sistema, con motivo y responsable.
 
@@ -312,14 +312,14 @@ para mozos y caja, ningún mozo puede liberarla y, al agregar algo, vuelve a ocu
 
 ### Implementation for User Story 6
 
-- [ ] T057 [US6] Agregar a `orders.service.ts` `requestBill(orderId)` con `lockOpenOrder` (depende de T022):
+- [X] T057 [US6] Agregar a `orders.service.ts` `requestBill(orderId)` con `lockOpenOrder` (depende de T022):
   - con borradores, `409 HAS_UNSENT_ITEMS`;
   - sin unidades vigentes enviadas, `409 NO_CONSUMPTION`;
   - `transition(['OCUPADA'], 'POR_COBRAR')`, si no `409 TABLE_STATE_CONFLICT` con `details.current`;
   - después del commit emite `orders:table-status-changed`.
-- [ ] T058 [US6] Extender `add` en `order-items.service.ts`: con la mesa `POR_COBRAR`, si no llega `confirmReopen: true` sigue respondiendo `409 TABLE_AWAITING_PAYMENT`; si llega, en la misma transacción hace `transition(['POR_COBRAR'], 'OCUPADA')` y crea el ítem, y después del commit emite `orders:table-status-changed` (depende de T030)
-- [ ] T059 [US6] Agregar a `orders.controller.ts` `POST orders/:orderId/request-bill` (200, `@Roles('WAITER')`) (depende de T057)
-- [ ] T060 [US6] Agregar `useRequestBill` a `apps/web/src/features/orders/api.ts`. En `OrderPage.tsx` (depende de T033, T046):
+- [X] T058 [US6] Extender `add` en `order-items.service.ts`: con la mesa `POR_COBRAR`, si no llega `confirmReopen: true` sigue respondiendo `409 TABLE_AWAITING_PAYMENT`; si llega, en la misma transacción hace `transition(['POR_COBRAR'], 'OCUPADA')` y crea el ítem, y después del commit emite `orders:table-status-changed` (depende de T030)
+- [X] T059 [US6] Agregar a `orders.controller.ts` `POST orders/:orderId/request-bill` (200, `@Roles('WAITER')`) (depende de T057)
+- [X] T060 [US6] Agregar `useRequestBill` a `apps/web/src/features/orders/api.ts`. En `OrderPage.tsx` (depende de T033, T046):
   - crear `apps/web/src/features/orders/ConsumptionSummary.tsx`;
   - "Pedir la cuenta", visible si `canRequestBill`, con la confirmación "¿Pedir la cuenta de la mesa N?";
   - en `useAddItem`, el diálogo de reapertura ante `TABLE_AWAITING_PAYMENT`.
