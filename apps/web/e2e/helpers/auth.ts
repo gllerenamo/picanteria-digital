@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 
 export type E2eUserKey = 'admin' | 'mozo' | 'cocina' | 'caja';
+/** Usuario de prueba con el que se puede ingresar: uno por rol y un segundo mozo (003). */
+export type E2eLoginKey = E2eUserKey | 'mozo2';
 
 interface E2eUser {
-  key: E2eUserKey;
+  key: E2eLoginKey;
   username: string;
   password: string;
   fullName: string;
@@ -15,7 +17,7 @@ const users = JSON.parse(
   readFileSync(new URL('../../../api/prisma/e2e-users.json', import.meta.url), 'utf8'),
 ) as E2eUser[];
 
-export function e2eUser(key: E2eUserKey): E2eUser {
+export function e2eUser(key: E2eLoginKey): E2eUser {
   const user = users.find((candidate) => candidate.key === key);
   if (!user) throw new Error(`No existe el usuario de prueba ${key}`);
   return user;
@@ -29,7 +31,7 @@ export async function loginWith(page: Page, username: string, password: string):
 }
 
 /** Inicia sesión con un usuario de prueba y espera a salir de /ingresar. */
-export async function loginAs(page: Page, key: E2eUserKey): Promise<void> {
+export async function loginAs(page: Page, key: E2eLoginKey): Promise<void> {
   const user = e2eUser(key);
   await loginWith(page, user.username, user.password);
   await expect(page).not.toHaveURL(/\/ingresar$/);

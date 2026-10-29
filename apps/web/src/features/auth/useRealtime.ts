@@ -1,22 +1,26 @@
 import { REALTIME_EVENTS, appRouteFor, canAccess, type CurrentUser } from '@picanteria/shared';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { connectRealtime } from '../../lib/socket';
+import type { RealtimeState } from '../../lib/realtime-context';
+import { connectRealtime, type RealtimeSocket } from '../../lib/socket';
 import { ACCOUNT_DISABLED_NOTICE, setLoginNotice } from './login-notice';
 import { CURRENT_USER_KEY, clearSession, useCurrentUser } from './session';
 
 /**
  * Mantiene la conexión de tiempo real mientras hay sesión y aplica al instante los cambios
- * que hace el administrador (contracts/websocket-events.md).
+ * que hace el administrador (contracts/websocket-events.md). Devuelve el socket y su estado
+ * para compartirlos con `RealtimeProvider` (lib/realtime-context.tsx).
  */
-export function useRealtime(): void {
+export function useRealtime(): RealtimeState {
   const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const pathRef = useRef(pathname);
   const userId = user?.id;
+  const [socketState, setSocketState] = useState<RealtimeSocket | null>(null);
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     pathRef.current = pathname;
@@ -25,6 +29,10 @@ export function useRealtime(): void {
   useEffect(() => {
     if (!userId) return;
     const socket = connectRealtime();
+    setSocketState(socket);
+    socket.on('connect', () => {
+      setConnected(true);
+    });
 
     socket.on(REALTIME_EVENTS.SESSION_REVOKED, ({ reason }) => {
       socket.disconnect();
@@ -47,6 +55,7 @@ export function useRealtime(): void {
     // Respaldo: si el servidor cerró la conexión, se vuelve a pedir el perfil; sin sesión
     // válida, RequireAuth lleva a /ingresar.
     socket.on('disconnect', (reason) => {
+      setConnected(false);
       if (reason === 'io server disconnect') {
         void queryClient.invalidateQueries({ queryKey: CURRENT_USER_KEY });
       }
@@ -54,6 +63,10 @@ export function useRealtime(): void {
 
     return () => {
       socket.disconnect();
+      setSocketState(null);
+      setConnected(false);
     };
   }, [userId, queryClient, navigate]);
+
+  return { socket: socketState, connected };
 }

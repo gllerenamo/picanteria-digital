@@ -16,19 +16,23 @@ enum Role {
 }
 
 model User {
-  id                  String    @id @default(uuid()) @db.Uuid
-  fullName            String    @map("full_name") @db.VarChar(100)
+  id                  String            @id @default(uuid()) @db.Uuid
+  fullName            String            @map("full_name") @db.VarChar(100)
   /// Sin espacios en los extremos y en minúsculas (único sin distinguir mayúsculas).
-  username            String    @unique @db.VarChar(30)
+  username            String            @unique @db.VarChar(30)
   /// Hash Argon2id. Nunca se devuelve en ninguna respuesta.
-  passwordHash        String    @map("password_hash")
+  passwordHash        String            @map("password_hash")
   role                Role
-  isActive            Boolean   @default(true) @map("is_active")
-  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
-  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(3)
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  isActive            Boolean           @default(true) @map("is_active")
+  failedLoginAttempts Int               @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?         @map("locked_until") @db.Timestamptz(3)
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
   sessions            Session[]
+  // Relaciones inversas de 003-mesas-pedidos (sin columnas nuevas en users).
+  ordersOpened        Order[]           @relation("OrderWaiter")
+  dispatchesSent      KitchenDispatch[] @relation("DispatchSentBy")
+  itemVoids           ItemVoid[]        @relation("ItemVoidedBy")
 
   @@map("users")
 }
@@ -71,6 +75,7 @@ model MenuItem {
   isActive    Boolean      @default(true) @map("is_active")
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  orderItems  OrderItem[]
 
   @@unique([categoryId, name])
   @@index([categoryId])
@@ -90,6 +95,100 @@ model DiningTable {
   status      TableStatus @default(LIBRE)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  orders      Order[]
 
   @@map("dining_tables")
+}
+
+// Modelo de datos de specs/003-mesas-pedidos/data-model.md. El índice único parcial
+// orders_one_open_per_table y los CHECK de order_items se agregan a mano en la migración.
+
+enum OrderStatus {
+  OPEN
+  PAID
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  DRAFT
+  PENDING
+  PREPARING
+  READY
+  VOIDED
+}
+
+model Order {
+  id         String            @id @default(uuid()) @db.Uuid
+  tableId    String            @map("table_id") @db.Uuid
+  table      DiningTable       @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  /// Mozo responsable: el que abrió la mesa.
+  waiterId   String            @map("waiter_id") @db.Uuid
+  waiter     User              @relation("OrderWaiter", fields: [waiterId], references: [id], onDelete: Restrict)
+  guestCount Int?              @map("guest_count")
+  status     OrderStatus       @default(OPEN)
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  closedAt   DateTime?         @map("closed_at") @db.Timestamptz(3)
+  items      OrderItem[]
+  dispatches KitchenDispatch[]
+
+  @@index([tableId])
+  @@index([waiterId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String           @id @default(uuid()) @db.Uuid
+  orderId        String           @map("order_id") @db.Uuid
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// Nulo mientras el ítem está en DRAFT.
+  dispatchId     String?          @map("dispatch_id") @db.Uuid
+  dispatch       KitchenDispatch? @relation(fields: [dispatchId], references: [id], onDelete: Restrict)
+  menuItemId     String           @map("menu_item_id") @db.Uuid
+  menuItem       MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  quantity       Int
+  voidedQuantity Int              @default(0) @map("voided_quantity")
+  /// Precio vigente al enviarse (FR-025); nulo mientras el ítem está en DRAFT.
+  unitPrice      Decimal?         @map("unit_price") @db.Decimal(10, 2)
+  notes          String?          @db.VarChar(140)
+  status         OrderItemStatus  @default(DRAFT)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  voids          ItemVoid[]
+
+  @@index([orderId, status])
+  @@index([dispatchId])
+  @@map("order_items")
+}
+
+model KitchenDispatch {
+  id             String      @id @default(uuid()) @db.Uuid
+  orderId        String      @map("order_id") @db.Uuid
+  order          Order       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// Correlativo global: fija el orden en que cocina recibe los envíos.
+  sequence       Int         @unique
+  round          Int
+  idempotencyKey String      @unique @map("idempotency_key") @db.Uuid
+  sentById       String      @map("sent_by_id") @db.Uuid
+  sentBy         User        @relation("DispatchSentBy", fields: [sentById], references: [id], onDelete: Restrict)
+  sentAt         DateTime    @default(now()) @map("sent_at") @db.Timestamptz(3)
+  items          OrderItem[]
+
+  @@unique([orderId, round])
+  @@map("kitchen_dispatches")
+}
+
+model ItemVoid {
+  id          String    @id @default(uuid()) @db.Uuid
+  orderItemId String    @map("order_item_id") @db.Uuid
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  units       Int
+  reason      String    @db.VarChar(200)
+  voidedById  String    @map("voided_by_id") @db.Uuid
+  voidedBy    User      @relation("ItemVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+  voidedAt    DateTime  @default(now()) @map("voided_at") @db.Timestamptz(3)
+
+  @@index([orderItemId])
+  @@map("item_voids")
 }

@@ -6,3 +6,4 @@ export * from './events';
 export * from './schemas/auth';
 export * from './schemas/users';
 export * from './schemas/menu';
+export * from './schemas/orders';
