@@ -1,6 +1,7 @@
 import type { TableOverview } from '@picanteria/shared';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { ConnectionBanner } from '../../components/ConnectionBanner';
 import { ApiError } from '../../lib/api-client';
 import { useOpenTable, useTablesBoard } from './api';
 import { OpenTableDialog } from './OpenTableDialog';
@@ -46,6 +47,7 @@ export function TablesBoardPage() {
       {/* El título "Mozo" lo exige la prueba [001] AC-2.5. */}
       <h1 className="text-3xl font-bold">Mozo</h1>
       <p className="text-lg text-muted">Toca una mesa libre para abrirla o una ocupada para ver su pedido.</p>
+      <ConnectionBanner />
       {notice && (
         <p role="alert" className="rounded-lg border border-danger px-4 py-3 text-lg text-danger">
           {notice}

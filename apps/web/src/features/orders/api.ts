@@ -1,5 +1,7 @@
 import {
+  IDEMPOTENCY_KEY_HEADER,
   categoryWithItemsResponseSchema,
+  dispatchResponseSchema,
   orderDetailSchema,
   orderItemResponseSchema,
   tableOverviewSchema,
@@ -9,7 +11,8 @@ import {
 } from '@picanteria/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { requestJson, requestVoid } from '../../lib/api-client';
+import { ApiError, requestJson, requestVoid } from '../../lib/api-client';
+import { clearKey, getOrCreateKey } from './pending-dispatch';
 
 /** Todas las consultas de la 003 cuelgan de ['orders']: un evento las invalida juntas. */
 export const ORDERS_KEY = ['orders'] as const;
@@ -89,6 +92,30 @@ export function useRemoveItem() {
   const invalidate = useInvalidateOrders();
   return useMutation({
     mutationFn: (itemId: string) => requestVoid('DELETE', `/api/order-items/${itemId}`),
+    onSettled: invalidate,
+  });
+}
+
+/** Respuestas tras las que la clave ya no sirve: se genera una nueva en el próximo envío. */
+const DEFINITIVE_SEND_ERRORS = new Set(['NOTHING_TO_SEND', 'ITEMS_UNAVAILABLE', 'ORDER_NOT_OPEN', 'IDEMPOTENCY_KEY_REUSED']);
+
+/**
+ * Envía a cocina con la clave de idempotencia del pedido. Ante un error de red o del servidor
+ * la clave se conserva, así "Reintentar" no duplica el envío (FR-022, research.md §5).
+ */
+export function useSendToKitchen(orderId: string) {
+  const invalidate = useInvalidateOrders();
+  return useMutation({
+    mutationFn: () =>
+      requestJson('POST', `/api/orders/${orderId}/dispatches`, dispatchResponseSchema, undefined, {
+        [IDEMPOTENCY_KEY_HEADER]: getOrCreateKey(orderId),
+      }),
+    onSuccess: () => {
+      clearKey(orderId);
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && DEFINITIVE_SEND_ERRORS.has(error.code)) clearKey(orderId);
+    },
     onSettled: invalidate,
   });
 }

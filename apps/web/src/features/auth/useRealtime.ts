@@ -2,7 +2,7 @@ import { REALTIME_EVENTS, appRouteFor, canAccess, type CurrentUser } from '@pica
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import type { RealtimeState } from '../../lib/realtime-context';
+import type { RealtimeState, RealtimeStatus } from '../../lib/realtime-context';
 import { connectRealtime, type RealtimeSocket } from '../../lib/socket';
 import { ACCOUNT_DISABLED_NOTICE, setLoginNotice } from './login-notice';
 import { CURRENT_USER_KEY, clearSession, useCurrentUser } from './session';
@@ -20,7 +20,7 @@ export function useRealtime(): RealtimeState {
   const pathRef = useRef(pathname);
   const userId = user?.id;
   const [socketState, setSocketState] = useState<RealtimeSocket | null>(null);
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState<RealtimeStatus>('connecting');
 
   useEffect(() => {
     pathRef.current = pathname;
@@ -31,7 +31,10 @@ export function useRealtime(): RealtimeState {
     const socket = connectRealtime();
     setSocketState(socket);
     socket.on('connect', () => {
-      setConnected(true);
+      setStatus('connected');
+    });
+    socket.on('connect_error', () => {
+      setStatus('disconnected');
     });
 
     socket.on(REALTIME_EVENTS.SESSION_REVOKED, ({ reason }) => {
@@ -55,7 +58,7 @@ export function useRealtime(): RealtimeState {
     // Respaldo: si el servidor cerró la conexión, se vuelve a pedir el perfil; sin sesión
     // válida, RequireAuth lleva a /ingresar.
     socket.on('disconnect', (reason) => {
-      setConnected(false);
+      setStatus('disconnected');
       if (reason === 'io server disconnect') {
         void queryClient.invalidateQueries({ queryKey: CURRENT_USER_KEY });
       }
@@ -64,9 +67,9 @@ export function useRealtime(): RealtimeState {
     return () => {
       socket.disconnect();
       setSocketState(null);
-      setConnected(false);
+      setStatus('connecting');
     };
   }, [userId, queryClient, navigate]);
 
-  return { socket: socketState, connected };
+  return { socket: socketState, status };
 }

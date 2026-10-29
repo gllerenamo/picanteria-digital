@@ -200,8 +200,8 @@ orden de confirmación, y un reintento con la misma clave no duplica.
 
 ### Implementation for User Story 3
 
-- [ ] T038 [P] [US3] Crear `apps/api/src/orders/idempotency-key.decorator.ts`: decorador de parámetro que lee `Idempotency-Key` y la valida con `idempotencyKeySchema`; si falta o no es válida, `400 VALIDATION_ERROR` con `details { 'Idempotency-Key': 'Falta la clave de envío' }`
-- [ ] T039 [US3] Crear `apps/api/src/orders/dispatches.service.ts` con `send(orderId, key, user)` en una transacción ([research.md §4 a §6, §8](research.md)) (depende de T011, T012, T030):
+- [X] T038 [P] [US3] Crear `apps/api/src/orders/idempotency-key.decorator.ts`: decorador de parámetro que lee `Idempotency-Key` y la valida con `idempotencyKeySchema`; si falta o no es válida, `400 VALIDATION_ERROR` con `details { 'Idempotency-Key': 'Falta la clave de envío' }`
+- [X] T039 [US3] Crear `apps/api/src/orders/dispatches.service.ts` con `send(orderId, key, user)` en una transacción ([research.md §4 a §6, §8](research.md)) (depende de T011, T012, T030):
   1. `acquireDispatchLock`.
   2. Buscar la clave: en el mismo pedido devuelve ese envío sin emitir; en otro pedido, `409 IDEMPOTENCY_KEY_REUSED`.
   3. `lockOpenOrder`.
@@ -211,14 +211,14 @@ orden de confirmación, y un reintento con la misma clave no duplica.
   7. Crear el `KitchenDispatch`.
   8. Una sola sentencia SQL pasa los borradores a `PENDING` con `dispatch_id` y `unit_price = menu_items.price`.
   - Un `P2002` sobre la clave se resuelve releyendo el envío. Después del commit, y solo si se creó, `emitToRoles(['KITCHEN', 'WAITER'], 'orders:dispatch-sent', …)`.
-- [ ] T040 [US3] Crear `apps/api/src/orders/dispatches.controller.ts` con `POST orders/:orderId/dispatches` (201, `@Roles('WAITER')`, `@IdempotencyKey()`) y registrarlo en el módulo (depende de T038, T039)
-- [ ] T041 [P] [US3] Crear `apps/web/src/features/orders/pending-dispatch.ts`: `getOrCreateKey(orderId)` y `clearKey(orderId)` sobre `sessionStorage` con `try/catch` (con respaldo en memoria si falla), y la clave UUID v4 generada con `crypto.getRandomValues` (no `crypto.randomUUID`, que no existe en `http://` de la red local)
-- [ ] T042 [US3] Agregar a `apps/web/src/features/orders/api.ts` `useSendToKitchen(orderId)` (depende de T014, T041):
+- [X] T040 [US3] Crear `apps/api/src/orders/dispatches.controller.ts` con `POST orders/:orderId/dispatches` (201, `@Roles('WAITER')`, `@IdempotencyKey()`) y registrarlo en el módulo (depende de T038, T039)
+- [X] T041 [P] [US3] Crear `apps/web/src/features/orders/pending-dispatch.ts`: `getOrCreateKey(orderId)` y `clearKey(orderId)` sobre `sessionStorage` con `try/catch` (con respaldo en memoria si falla), y la clave UUID v4 generada con `crypto.getRandomValues` (no `crypto.randomUUID`, que no existe en `http://` de la red local)
+- [X] T042 [US3] Agregar a `apps/web/src/features/orders/api.ts` `useSendToKitchen(orderId)` (depende de T014, T041):
   - envía con la cabecera `Idempotency-Key` de `getOrCreateKey`;
   - `clearKey` ante 201 o un 409 definitivo (`NOTHING_TO_SEND`, `ITEMS_UNAVAILABLE`, `ORDER_NOT_OPEN`, `IDEMPOTENCY_KEY_REUSED`);
   - conserva la clave ante `NETWORK_ERROR` o 5xx;
   - siempre invalida `['orders']`.
-- [ ] T043 [US3] Si no existe, crear `apps/web/src/components/ConnectionBanner.tsx` con `useRealtimeStatus` y `navigator.onLine`, que muestre "Sin conexión. Lo enviado está a salvo; para enviar a cocina necesitas conexión."; montarlo en `TablesBoardPage.tsx` y `OrderPage.tsx` y agregar a `OrderPage.tsx` el botón "Enviar a cocina" (deshabilitado sin borradores), que pasa a "Reintentar" tras un error de red, más los mensajes de [contracts/ui-routes.md](contracts/ui-routes.md) (depende de T042)
+- [X] T043 [US3] Si no existe, crear `apps/web/src/components/ConnectionBanner.tsx` con `useRealtimeStatus` y `navigator.onLine`, que muestre "Sin conexión. Lo enviado está a salvo; para enviar a cocina necesitas conexión."; montarlo en `TablesBoardPage.tsx` y `OrderPage.tsx` y agregar a `OrderPage.tsx` el botón "Enviar a cocina" (deshabilitado sin borradores), que pasa a "Reintentar" tras un error de red, más los mensajes de [contracts/ui-routes.md](contracts/ui-routes.md) (depende de T042)
 
 **Checkpoint**: US1 a US3 forman el producto mínimo: de la mesa a la cocina sin papel.
 

@@ -1,4 +1,5 @@
 import type {
+  DispatchResponse,
   Money,
   OrderDetail,
   OrderItemResponse,
@@ -41,7 +42,14 @@ export const TABLE_OVERVIEW_INCLUDE = {
   },
 } satisfies Prisma.DiningTableInclude;
 
+export const DISPATCH_INCLUDE = {
+  order: { select: { table: { select: { tableNumber: true } } } },
+  sentBy: { select: { id: true, fullName: true } },
+  items: { include: ORDER_ITEM_INCLUDE, orderBy: { createdAt: 'asc' } },
+} satisfies Prisma.KitchenDispatchInclude;
+
 export type OrderItemRecord = Prisma.OrderItemGetPayload<{ include: typeof ORDER_ITEM_INCLUDE }>;
+export type DispatchRecord = Prisma.KitchenDispatchGetPayload<{ include: typeof DISPATCH_INCLUDE }>;
 export type OrderDetailRecord = Prisma.OrderGetPayload<{ include: typeof ORDER_DETAIL_INCLUDE }>;
 export type TableOverviewRecord = Prisma.DiningTableGetPayload<{ include: typeof TABLE_OVERVIEW_INCLUDE }>;
 
@@ -187,6 +195,19 @@ export function toOrderDetail(order: OrderDetailRecord, viewer: Viewer): OrderDe
       viewer,
     }),
     canRequestBill: canRequestBill({ orderStatus: order.status, tableStatus: order.table.status, lines }),
+  };
+}
+
+export function toDispatch(dispatch: DispatchRecord): DispatchResponse {
+  return {
+    id: dispatch.id,
+    sequence: dispatch.sequence,
+    round: dispatch.round,
+    sentBy: dispatch.sentBy,
+    sentAt: dispatch.sentAt.toISOString(),
+    orderId: dispatch.orderId,
+    tableNumber: dispatch.order.table.tableNumber,
+    items: dispatch.items.map(toOrderItem),
   };
 }
 

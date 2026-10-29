@@ -2,6 +2,9 @@ import type { ServerToClientEvents } from '@picanteria/shared';
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
 import type { RealtimeSocket } from './socket';
 
+/** `connecting` hasta la primera conexión; `disconnected` tras un corte (FR-037). */
+export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected';
+
 /**
  * Socket de tiempo real compartido: lo abre `useRealtime` en `AppShell` y las pantallas se
  * suscriben con `useRealtimeEvent`, sin abrir otra conexión (specs/004-cocina/research.md §7,
@@ -9,18 +12,18 @@ import type { RealtimeSocket } from './socket';
  */
 export interface RealtimeState {
   socket: RealtimeSocket | null;
-  connected: boolean;
+  status: RealtimeStatus;
 }
 
-const RealtimeContext = createContext<RealtimeState>({ socket: null, connected: false });
+const RealtimeContext = createContext<RealtimeState>({ socket: null, status: 'connecting' });
 
 export function RealtimeProvider({ value, children }: { value: RealtimeState; children: ReactNode }) {
   return <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>;
 }
 
-/** Si el canal de tiempo real está conectado (para el indicador de conexión). */
-export function useRealtimeStatus(): { connected: boolean } {
-  return { connected: useContext(RealtimeContext).connected };
+/** Estado del canal de tiempo real (para el indicador de conexión). */
+export function useRealtimeStatus(): RealtimeStatus {
+  return useContext(RealtimeContext).status;
 }
 
 type EventPayload<E extends keyof ServerToClientEvents> = Parameters<ServerToClientEvents[E]>[0];
