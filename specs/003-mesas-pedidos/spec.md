@@ -85,8 +85,9 @@ El administrador interviene solo para anular lo que ya se envió. Cocina (módul
 En esta especificación, el **mozo responsable** de una mesa es el mozo que la abrió. Cualquier
 mozo puede atender una mesa ocupada, pero el responsable no cambia.
 
-Cada escenario de aceptación tiene un identificador (`US<historia>-AS<número>`) para que las
-pruebas automatizadas lo referencien, como exige el Principio II de la constitución.
+Cada escenario de aceptación tiene un identificador (`AC-<historia>.<número>`) para que las
+pruebas automatizadas lo referencien con el prefijo `[003] AC-x.y`, como exige el Principio II
+de la constitución.
 
 ### User Story 1 - Ver las mesas y abrir una mesa libre (Priority: P1)
 
@@ -104,26 +105,26 @@ Entrega valor como tablero de ocupación aunque las demás historias no existan.
 
 **Acceptance Scenarios**:
 
-1. **US1-AS1**: **Dado** un mozo con sesión iniciada, **Cuando** entra al módulo, **Entonces** ve
+1. **AC-1.1**: **Dado** un mozo con sesión iniciada, **Cuando** entra al módulo, **Entonces** ve
    todas las mesas del local, cada una con su número y su estado (libre, ocupada o por cobrar),
    y en las que no están libres, su mozo responsable.
-2. **US1-AS2**: **Dado** una mesa libre, **Cuando** el mozo la abre, **Entonces** la mesa pasa a
+2. **AC-1.2**: **Dado** una mesa libre, **Cuando** el mozo la abre, **Entonces** la mesa pasa a
    ocupada, se registran el mozo que la abrió y la hora de apertura, y el mozo pasa directamente a
    tomar el pedido de esa mesa.
-3. **US1-AS3**: **Dado** que un mozo abre una mesa, **Cuando** otro mozo tiene abierta la vista de
+3. **AC-1.3**: **Dado** que un mozo abre una mesa, **Cuando** otro mozo tiene abierta la vista de
    mesas, **Entonces** ve la mesa como ocupada sin recargar la pantalla.
-4. **US1-AS4**: **Dado** una mesa ocupada o por cobrar, **Cuando** un mozo intenta abrirla,
+4. **AC-1.4**: **Dado** una mesa ocupada o por cobrar, **Cuando** un mozo intenta abrirla,
    **Entonces** el sistema no la abre de nuevo ni crea un segundo pedido para ella.
-5. **US1-AS5**: **Dado** que dos mozos intentan abrir la misma mesa libre casi al mismo tiempo,
+5. **AC-1.5**: **Dado** que dos mozos intentan abrir la misma mesa libre casi al mismo tiempo,
    **Cuando** ambos confirman, **Entonces** solo uno la abre y el otro recibe un mensaje que le
    indica qué mozo la abrió y ve la mesa como ocupada.
-6. **US1-AS6**: **Dado** una mesa que el mozo abrió por error y de la que aún no se envió nada a
+6. **AC-1.6**: **Dado** una mesa que el mozo abrió por error y de la que aún no se envió nada a
    cocina, **Cuando** ese mismo mozo cancela la apertura y confirma, **Entonces** la mesa vuelve
    a libre y su pedido se descarta.
-7. **US1-AS7**: **Dado** una mesa libre, **Cuando** el mozo la abre sin indicar el número de
+7. **AC-1.7**: **Dado** una mesa libre, **Cuando** el mozo la abre sin indicar el número de
    comensales, **Entonces** la mesa se abre igual; y **Cuando** después un mozo indica o cambia
    ese número, **Entonces** el pedido lo registra.
-8. **US1-AS8**: **Dado** una mesa sin nada enviado a cocina que abrió otro mozo, **Cuando** un
+8. **AC-1.8**: **Dado** una mesa sin nada enviado a cocina que abrió otro mozo, **Cuando** un
    mozo que no es su responsable intenta cancelar la apertura, **Entonces** el sistema no lo
    permite.
 
@@ -145,21 +146,21 @@ correcto, que se puede revisar aunque la cocina no esté conectada.
 
 **Acceptance Scenarios**:
 
-1. **US2-AS1**: **Dado** una mesa ocupada, **Cuando** el mozo abre la carta para tomar el pedido,
+1. **AC-2.1**: **Dado** una mesa ocupada, **Cuando** el mozo abre la carta para tomar el pedido,
    **Entonces** ve solo los platos y bebidas marcados como disponibles, con su nombre y su precio
    en soles.
-2. **US2-AS2**: **Dado** un plato que la carta marca como no disponible, **Cuando** el mozo toma
+2. **AC-2.2**: **Dado** un plato que la carta marca como no disponible, **Cuando** el mozo toma
    un pedido, **Entonces** ese plato no aparece entre las opciones.
-3. **US2-AS3**: **Dado** la carta disponible, **Cuando** el mozo agrega un plato con cantidad 2 y
+3. **AC-2.3**: **Dado** la carta disponible, **Cuando** el mozo agrega un plato con cantidad 2 y
    la nota "sin ají", **Entonces** el ítem aparece en el pedido de la mesa como no enviado, con
    esa cantidad y esa nota.
-4. **US2-AS4**: **Dado** un plato ya agregado, **Cuando** el mozo agrega el mismo plato con otra
+4. **AC-2.4**: **Dado** un plato ya agregado, **Cuando** el mozo agrega el mismo plato con otra
    nota, **Entonces** quedan como dos ítems distintos, cada uno con su cantidad y su nota.
-5. **US2-AS5**: **Dado** un ítem aún no enviado, **Cuando** el mozo cambia su cantidad o su nota,
+5. **AC-2.5**: **Dado** un ítem aún no enviado, **Cuando** el mozo cambia su cantidad o su nota,
    **Entonces** el cambio se aplica de inmediato sin pedir autorización.
-6. **US2-AS6**: **Dado** un ítem aún no enviado, **Cuando** el mozo lo quita y confirma,
+6. **AC-2.6**: **Dado** un ítem aún no enviado, **Cuando** el mozo lo quita y confirma,
    **Entonces** el ítem desaparece del pedido sin pedir autorización y la cocina no recibe nada.
-7. **US2-AS7**: **Dado** una mesa con ítems no enviados, **Cuando** el mozo pasa a atender otra
+7. **AC-2.7**: **Dado** una mesa con ítems no enviados, **Cuando** el mozo pasa a atender otra
    mesa y luego vuelve, **Entonces** encuentra los ítems tal como los dejó.
 
 ---
@@ -180,32 +181,32 @@ mesa, platos, cantidades y notas, solo lo nuevo, y en el orden en que salió.
 
 **Acceptance Scenarios**:
 
-1. **US3-AS1**: **Dado** una mesa con ítems no enviados, **Cuando** el mozo pulsa enviar,
+1. **AC-3.1**: **Dado** una mesa con ítems no enviados, **Cuando** el mozo pulsa enviar,
    **Entonces** se registra un envío con la mesa, el mozo, la fecha y hora y esos ítems con sus
    cantidades y notas; los ítems pasan a "pendiente" y el mozo ve la confirmación del envío.
-2. **US3-AS2**: **Dado** un envío confirmado, **Cuando** la cocina tiene abierta su pantalla,
+2. **AC-3.2**: **Dado** un envío confirmado, **Cuando** la cocina tiene abierta su pantalla,
    **Entonces** el envío aparece en ella sin que nadie recargue.
-3. **US3-AS3**: **Dado** una mesa con una ronda ya enviada, **Cuando** el mozo agrega dos platos
+3. **AC-3.3**: **Dado** una mesa con una ronda ya enviada, **Cuando** el mozo agrega dos platos
    más y envía, **Entonces** el segundo envío contiene solo esos dos platos.
-4. **US3-AS4**: **Dado** una mesa sin ítems no enviados, **Cuando** el mozo pulsa enviar,
+4. **AC-3.4**: **Dado** una mesa sin ítems no enviados, **Cuando** el mozo pulsa enviar,
    **Entonces** no se registra ningún envío, la cocina no recibe nada y el mozo ve un mensaje de
    que no hay nada nuevo que enviar.
-5. **US3-AS5**: **Dado** que el mozo agregó un plato que se agotó antes de enviarlo, **Cuando**
+5. **AC-3.5**: **Dado** que el mozo agregó un plato que se agotó antes de enviarlo, **Cuando**
    pulsa enviar, **Entonces** no se envía nada, el sistema le indica qué ítems ya no están
    disponibles y le permite quitarlos o cambiarlos y volver a enviar.
-6. **US3-AS6**: **Dado** varios envíos de distintas mesas y mozos, **Cuando** llegan a la cocina,
+6. **AC-3.6**: **Dado** varios envíos de distintas mesas y mozos, **Cuando** llegan a la cocina,
    **Entonces** aparecen en el orden en que se confirmaron, cada uno con su número de orden y su
    hora.
-7. **US3-AS7**: **Dado** un ítem ya enviado, **Cuando** el mozo revisa el pedido, **Entonces** no
+7. **AC-3.7**: **Dado** un ítem ya enviado, **Cuando** el mozo revisa el pedido, **Entonces** no
    puede quitarlo ni cambiarlo por su cuenta; solo puede anularse con autorización del
    administrador (Historia 5).
-8. **US3-AS8**: **Dado** que la tablet del mozo no tiene conexión, **Cuando** pulsa enviar,
+8. **AC-3.8**: **Dado** que la tablet del mozo no tiene conexión, **Cuando** pulsa enviar,
    **Entonces** el sistema le muestra que el envío no se realizó, los ítems siguen como no
    enviados y puede volver a intentarlo cuando regrese la conexión.
-9. **US3-AS9**: **Dado** que la conexión se cortó mientras se enviaba y el mozo no supo si el
+9. **AC-3.9**: **Dado** que la conexión se cortó mientras se enviaba y el mozo no supo si el
    envío salió, **Cuando** recupera la conexión y vuelve a intentarlo, **Entonces** la cocina
    recibe ese envío una sola vez: ni se pierde ni se duplica.
-10. **US3-AS10**: **Dado** una mesa ocupada que abrió otro mozo, **Cuando** un mozo toma ítems en
+10. **AC-3.10**: **Dado** una mesa ocupada que abrió otro mozo, **Cuando** un mozo toma ítems en
     ella y los envía, **Entonces** el sistema lo permite, el envío registra al mozo que lo envió y
     la mesa conserva a su mozo responsable.
 
@@ -226,18 +227,18 @@ cuando un ítem pasa a listo.
 
 **Acceptance Scenarios**:
 
-1. **US4-AS1**: **Dado** una mesa con ítems enviados, **Cuando** el mozo abre su pedido,
+1. **AC-4.1**: **Dado** una mesa con ítems enviados, **Cuando** el mozo abre su pedido,
    **Entonces** ve cada ítem enviado con su estado actual (pendiente, en preparación, listo o
    anulado), separado de los ítems aún no enviados.
-2. **US4-AS2**: **Dado** un ítem pendiente, **Cuando** la cocina lo pasa a en preparación,
+2. **AC-4.2**: **Dado** un ítem pendiente, **Cuando** la cocina lo pasa a en preparación,
    **Entonces** el mozo ve el cambio sin recargar la pantalla.
-3. **US4-AS3**: **Dado** un ítem de una mesa de la que el mozo es responsable, **Cuando** la
+3. **AC-4.3**: **Dado** un ítem de una mesa de la que el mozo es responsable, **Cuando** la
    cocina lo marca listo, **Entonces** ese mozo recibe un aviso con la mesa, el plato y la
    cantidad, aunque esté en otra pantalla del módulo (por ejemplo, tomando el pedido de otra mesa).
-4. **US4-AS4**: **Dado** un ítem que un mozo envió en una mesa de la que no es responsable,
+4. **AC-4.4**: **Dado** un ítem que un mozo envió en una mesa de la que no es responsable,
    **Cuando** la cocina lo marca listo, **Entonces** el aviso le llega al mozo responsable de la
    mesa y no al que envió el ítem.
-5. **US4-AS5**: **Dado** que la tablet del mozo estuvo sin conexión mientras un plato de sus mesas
+5. **AC-4.5**: **Dado** que la tablet del mozo estuvo sin conexión mientras un plato de sus mesas
    pasó a listo, **Cuando** recupera la conexión, **Entonces** ve el estado actual de sus mesas y
    recibe el aviso de ese plato.
 
@@ -260,20 +261,20 @@ consumo.
 
 **Acceptance Scenarios**:
 
-1. **US5-AS1**: **Dado** un ítem enviado en estado pendiente o en preparación, **Cuando** el
+1. **AC-5.1**: **Dado** un ítem enviado en estado pendiente o en preparación, **Cuando** el
    administrador lo anula indicando un motivo y confirma, **Entonces** el ítem pasa a anulado y
    quedan registrados quién lo anuló, cuándo y por qué.
-2. **US5-AS2**: **Dado** un ítem recién anulado, **Cuando** la cocina tiene abierta su pantalla,
+2. **AC-5.2**: **Dado** un ítem recién anulado, **Cuando** la cocina tiene abierta su pantalla,
    **Entonces** ve que ese ítem de esa mesa fue anulado, sin que nadie recargue.
-3. **US5-AS3**: **Dado** que el administrador intenta anular un ítem sin indicar el motivo,
+3. **AC-5.3**: **Dado** que el administrador intenta anular un ítem sin indicar el motivo,
    **Cuando** confirma, **Entonces** el sistema no lo anula y le pide el motivo.
-4. **US5-AS4**: **Dado** un ítem en estado listo, **Cuando** el administrador intenta anularlo,
+4. **AC-5.4**: **Dado** un ítem en estado listo, **Cuando** el administrador intenta anularlo,
    **Entonces** el sistema no lo permite y le explica que el plato ya está listo.
-5. **US5-AS5**: **Dado** un usuario sin rol de administrador, **Cuando** intenta anular un ítem
+5. **AC-5.5**: **Dado** un usuario sin rol de administrador, **Cuando** intenta anular un ítem
    ya enviado, **Entonces** el sistema no se lo permite.
-6. **US5-AS6**: **Dado** un ítem anulado, **Cuando** el mozo o Caja consultan el consumo de la
+6. **AC-5.6**: **Dado** un ítem anulado, **Cuando** el mozo o Caja consultan el consumo de la
    mesa, **Entonces** el ítem aparece como anulado y no suma al total.
-7. **US5-AS7**: **Dado** un ítem enviado de 3 unidades en estado pendiente o en preparación,
+7. **AC-5.7**: **Dado** un ítem enviado de 3 unidades en estado pendiente o en preparación,
    **Cuando** el administrador anula 1 unidad indicando el motivo y confirma, **Entonces** la
    cocina ve que ahora debe preparar 2, el ítem sigue su curso con 2 unidades y el consumo de la
    mesa suma solo esas 2.
@@ -296,21 +297,21 @@ módulo 4 aún no existe) y ningún mozo puede liberarla.
 
 **Acceptance Scenarios**:
 
-1. **US6-AS1**: **Dado** una mesa ocupada con ítems enviados y ninguno por enviar, **Cuando** el
+1. **AC-6.1**: **Dado** una mesa ocupada con ítems enviados y ninguno por enviar, **Cuando** el
    mozo pide la cuenta y confirma, **Entonces** la mesa pasa a por cobrar y todos los mozos lo
    ven sin recargar la pantalla.
-2. **US6-AS2**: **Dado** una mesa ocupada o por cobrar, **Cuando** el mozo consulta su consumo,
+2. **AC-6.2**: **Dado** una mesa ocupada o por cobrar, **Cuando** el mozo consulta su consumo,
    **Entonces** ve los ítems enviados con su cantidad no anulada, precio unitario y subtotal, y
    el total en soles.
-3. **US6-AS3**: **Dado** una mesa con ítems tomados y no enviados, **Cuando** el mozo pide la
+3. **AC-6.3**: **Dado** una mesa con ítems tomados y no enviados, **Cuando** el mozo pide la
    cuenta, **Entonces** el sistema le avisa y le pide enviarlos o quitarlos antes.
-4. **US6-AS4**: **Dado** una mesa ocupada sin ningún ítem enviado, **Cuando** el mozo intenta
+4. **AC-6.4**: **Dado** una mesa ocupada sin ningún ítem enviado, **Cuando** el mozo intenta
    pedir la cuenta, **Entonces** el sistema no lo permite e indica que la mesa no tiene consumo.
-5. **US6-AS5**: **Dado** una mesa por cobrar, **Cuando** un mozo la ve, **Entonces** no tiene
+5. **AC-6.5**: **Dado** una mesa por cobrar, **Cuando** un mozo la ve, **Entonces** no tiene
    ninguna acción para liberarla: solo Caja la libera al cobrar.
-6. **US6-AS6**: **Dado** una mesa por cobrar, **Cuando** Caja registra el cobro, **Entonces** la
+6. **AC-6.6**: **Dado** una mesa por cobrar, **Cuando** Caja registra el cobro, **Entonces** la
    mesa aparece libre para todos los mozos, sin recargar, y lista para una nueva atención.
-7. **US6-AS7**: **Dado** una mesa por cobrar, **Cuando** un mozo agrega un ítem y confirma que la
+7. **AC-6.7**: **Dado** una mesa por cobrar, **Cuando** un mozo agrega un ítem y confirma que la
    mesa vuelve a ocupada, **Entonces** la mesa pasa a ocupada para todos, deja de figurar por
    cobrar para Caja y, para cobrarla, un mozo tiene que pedir la cuenta otra vez.
 
@@ -320,32 +321,32 @@ módulo 4 aún no existe) y ningún mozo puede liberarla.
 
 - **Un plato se agota entre que el mozo lo agrega y lo envía**: al enviar no sale nada; el
   sistema indica qué ítems ya no están disponibles y el mozo los quita o cambia y vuelve a
-  enviar (US3-AS5). Si el mozo tiene el pedido a la vista cuando el plato se agota, el ítem se
+  enviar (AC-3.5). Si el mozo tiene el pedido a la vista cuando el plato se agota, el ítem se
   muestra marcado como no disponible antes de que pulse enviar.
 - **El mozo pulsa enviar sin ítems nuevos**: no se registra ningún envío y la cocina no recibe
-  un envío vacío (US3-AS4).
+  un envío vacío (AC-3.4).
 - **La tablet del mozo pierde la conexión y luego la recupera**:
   - El mozo ve claramente que está sin conexión.
   - Lo tomado y aún no enviado no se pierde.
   - Un envío solo se muestra como enviado cuando el sistema lo registró; si no hay
-    confirmación, los ítems siguen como no enviados para reintentar (US3-AS8), y reintentar
-    no duplica el envío (US3-AS9).
+    confirmación, los ítems siguen como no enviados para reintentar (AC-3.8), y reintentar
+    no duplica el envío (AC-3.9).
   - Al reconectarse, el mozo ve el estado real de las mesas y de los ítems, incluidos los
     cambios que hicieron otros mozos, la cocina o Caja mientras estuvo desconectado, y recibe
-    los avisos de platos listos que no le llegaron (US4-AS5).
+    los avisos de platos listos que no le llegaron (AC-4.5).
   - Si mientras estuvo desconectado algún plato de su pedido por enviar se agotó, al reintentar
     se aplica la misma regla de plato agotado.
 - **Dos mozos intentan abrir la misma mesa a la vez**: solo uno la abre; el otro recibe un
-  mensaje y nunca quedan dos pedidos para la misma mesa (US1-AS5).
+  mensaje y nunca quedan dos pedidos para la misma mesa (AC-1.5).
 - **Dos mozos toman pedido en la misma mesa a la vez**: los ítems por enviar son de la mesa, no
   de cada mozo. Ambos los ven y el envío, lo haga quien lo haga, lleva todos los no enviados una
   sola vez.
 - **Una mesa ya está por cobrar y piden algo más**: el mozo agrega lo nuevo, la mesa vuelve a
-  ocupada y al final se pide la cuenta otra vez (US6-AS7). Si Caja ya registró el cobro, la mesa
+  ocupada y al final se pide la cuenta otra vez (AC-6.7). Si Caja ya registró el cobro, la mesa
   está libre y lo nuevo se pide en una atención nueva; si la mesa ya volvió a ocupada, Caja no
   puede cobrarla hasta que se pida la cuenta otra vez.
 - **Mesa abierta por error**: si aún no se envió nada, el mozo que la abrió cancela la apertura
-  y la mesa vuelve a libre (US1-AS6); ningún otro mozo puede hacerlo (US1-AS8). Si ya hay algo enviado, la mesa solo se libera al cobrar; lo enviado
+  y la mesa vuelve a libre (AC-1.6); ningún otro mozo puede hacerlo (AC-1.8). Si ya hay algo enviado, la mesa solo se libera al cobrar; lo enviado
   por error se anula con autorización del administrador.
 - **Un plato se agota después de enviado**: no afecta lo ya enviado. Si la cocina no puede
   prepararlo, el administrador lo anula (Historia 5).
@@ -355,7 +356,7 @@ módulo 4 aún no existe) y ningún mozo puede liberarla.
   otro mozo pide la cuenta): la acción que intente el mozo sobre el estado anterior se rechaza
   con un mensaje y su pantalla muestra el estado actual.
 - **El administrador anula un ítem que la cocina acaba de marcar listo**: vale el estado al
-  momento de confirmar; si ya está listo, la anulación se rechaza (US5-AS4).
+  momento de confirmar; si ya está listo, la anulación se rechaza (AC-5.4).
 - **Se pide la cuenta con platos todavía pendientes o en preparación**: se permite. Esos ítems
   cuentan en el consumo; si el cliente ya no los quiere, el administrador los anula antes del
   cobro.
