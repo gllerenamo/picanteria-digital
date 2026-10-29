@@ -28,6 +28,18 @@ Decisiones tomadas al alinear esta spec con `003-mesas-pedidos` (módulo Mesas y
 - Q: ¿Se puede anular un plato que la cocina ya marcó Listo? → A: No (`003-mesas-pedidos`
   FR-030); la cocina solo recibe anulaciones de ítems Pendientes o En preparación.
 
+### Session 2026-10-29
+
+Sesión de `/speckit-clarify`.
+
+- Q: ¿Se puede deshacer un "Listo" cuando el mozo ya marcó su aviso como "Visto"? → A: No. El
+  "Listo" se puede deshacer solo mientras su aviso no haya sido visto; después, el plato se
+  considera recogido (AC-2.8, FR-011).
+- Q: ¿Basta con que la anulación se vea en la comanda o la cocina debe confirmar que se enteró?
+  → A: Debe confirmar. Cada anulación, total o parcial, aparece como un aviso destacado con
+  sonido en la parte superior de la pantalla hasta que la cocina toca "Entendido" (AC-5.5,
+  FR-027).
+
 ## User Scenarios & Testing *(mandatory)*
 
 Una **comanda** es lo que la cocina ve de un **envío a cocina** del módulo Mesas y pedidos: una
@@ -110,6 +122,9 @@ y se verifica la secuencia permitida, el registro de horas y el retiro de la com
 7. **AC-2.7** — **Dado** un usuario con rol Mozo o Cajero, **cuando** intenta cambiar el
    estado de un ítem de cocina, **entonces** el sistema lo rechaza con el mensaje "No tienes
    permiso para cambiar el estado de los platos".
+8. **AC-2.8** — **Dado** un ítem "Listo" cuyo aviso el mozo ya marcó como "Visto",
+   **cuando** la cocina intenta deshacer ese "Listo", **entonces** el sistema no lo permite y
+   muestra "El mozo ya recogió este plato".
 
 ---
 
@@ -190,6 +205,10 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
 4. **AC-5.4** — **Dado** una comanda cuyos ítems fueron anulados en su totalidad,
    **entonces** permanece en la lista marcada como "Comanda anulada" hasta que la cocina toca
    "Entendido".
+5. **AC-5.5** — **Dado** que el administrador anula 1 rocoto relleno de la mesa 4, **cuando**
+   la anulación llega a cocina, **entonces** aparece en la parte superior de la pantalla el
+   aviso "Mesa 4: 1 × Rocoto relleno anulado", con un sonido, y permanece en todas las
+   pantallas de cocina hasta que alguien toca "Entendido".
 
 ---
 
@@ -248,7 +267,8 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
   (Pendiente → En preparación → Listo), con un único toque por paso.
 - **FR-010**: El sistema MUST registrar la hora de cada cambio de estado de un ítem.
 - **FR-011**: La cocina MUST poder deshacer el último cambio de estado de un ítem, previa
-  confirmación, mientras la comanda esté activa o en "Completadas".
+  confirmación, mientras la comanda esté activa o en "Completadas". Un "Listo" MUST NOT poder
+  deshacerse si el mozo ya marcó su aviso como "Visto".
 - **FR-012**: Solo los usuarios con rol Cocina o Administrador MUST poder cambiar el estado de
   un ítem; cualquier otro intento MUST rechazarse con un mensaje en español.
 - **FR-013**: Cuando todos los ítems no anulados de una comanda están en Listo, la comanda
@@ -285,6 +305,11 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
   anularon; el ítem MUST conservar su estado y seguir su curso con las unidades restantes.
 - **FR-024**: Una comanda totalmente anulada MUST permanecer visible como "Comanda anulada"
   hasta que la cocina la confirme con "Entendido".
+- **FR-027**: Cada anulación, total o parcial, MUST mostrarse además como un aviso destacado en
+  la parte superior de la pantalla de cocina, con la mesa, el plato y las unidades anuladas, y
+  con un sonido. El aviso MUST permanecer hasta que alguien de cocina toque "Entendido"; al
+  confirmarlo en una pantalla, desaparece de todas. Varios avisos se muestran en orden de
+  llegada.
 
 **Operación**
 
@@ -307,6 +332,8 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
 - **Aviso de plato listo**: notificación generada cuando un ítem pasa a Listo; tiene la mesa,
   el plato, la cantidad, el mozo responsable como destinatario, la hora de creación y si fue
   visto (y cuándo).
+- **Aviso de anulación en cocina**: se genera con cada anulación recibida; tiene la mesa, el
+  plato, las unidades anuladas, la hora y quién de cocina tocó "Entendido" (y cuándo).
 - **Referencias a otros módulos**: Mesa, Pedido y Envío a cocina (Mesas y pedidos), Plato y
   categoría (Carta), Usuario y rol (Base común).
 
@@ -332,7 +359,7 @@ administrador desde el módulo Mesas y pedidos) y se verifica cómo se muestran 
 ## Assumptions
 
 - **Usuarios y acceso**: el login, los roles (Administrador, Mozo, Cocina, Cajero) y la
-  gestión de usuarios los provee la Base común (`001-auth-roles`). El Administrador también
+  gestión de usuarios los provee la Base común (`001-base-comun`). El Administrador también
   puede ver y operar la pantalla de cocina.
 - **Dispositivo**: la cocina usa una o más tablets conectadas a la red del local; la pantalla
   se diseña para tablet en vertical y horizontal (Constitución, Principio IV).

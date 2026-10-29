@@ -42,5 +42,8 @@
   comandas duplicadas (AC-1.6, FR-007). 26 criterios, 26 requisitos, 7 criterios de éxito.
   Todos los ítems pasan.
 - Iteración 4: los criterios de aceptación pasan a `AC-<historia>.<n>`, formato acordado por el
-  equipo (el mismo de `001-auth-roles`). Sin cambios de contenido.
+  equipo (el mismo de `001-base-comun`). Sin cambios de contenido.
+- Iteración 5 (`/speckit-clarify`, 2026-10-29): 2 preguntas resueltas — no se deshace un
+  "Listo" ya visto por el mozo (AC-2.8, FR-011) y cada anulación se confirma con "Entendido"
+  (AC-5.5, FR-027). Quedan 28 criterios y 27 requisitos. Todos los ítems pasan.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
