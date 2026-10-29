@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { APP_ROUTES, ROLES, ROLE_HOME, canAccess, routesFor, type Role } from './roles';
 
-// Matriz de specs/001-base-comun/contracts/ui-routes.md.
+// Matriz de specs/001-base-comun/contracts/ui-routes.md y specs/002-carta/contracts/ui-routes.md.
 const expected: Record<Role, Record<string, boolean>> = {
-  ADMIN: { '/admin/usuarios': true, '/mozo': true, '/cocina': true, '/caja': true },
-  WAITER: { '/admin/usuarios': false, '/mozo': true, '/cocina': false, '/caja': false },
-  KITCHEN: { '/admin/usuarios': false, '/mozo': false, '/cocina': true, '/caja': false },
-  CASHIER: { '/admin/usuarios': false, '/mozo': false, '/cocina': false, '/caja': true },
+  ADMIN: { '/admin/usuarios': true, '/admin/carta': true, '/mozo': true, '/cocina': true, '/caja': true },
+  WAITER: { '/admin/usuarios': false, '/admin/carta': false, '/mozo': true, '/cocina': false, '/caja': false },
+  KITCHEN: { '/admin/usuarios': false, '/admin/carta': false, '/mozo': false, '/cocina': true, '/caja': false },
+  CASHIER: { '/admin/usuarios': false, '/admin/carta': false, '/mozo': false, '/cocina': false, '/caja': true },
 };
 
 describe('canAccess', () => {
@@ -31,7 +31,7 @@ describe('canAccess', () => {
 
 describe('routesFor', () => {
   it('el administrador ve todas las pantallas en el menú', () => {
-    expect(routesFor('ADMIN').map((r) => r.label)).toEqual(['Usuarios', 'Mozo', 'Cocina', 'Caja']);
+    expect(routesFor('ADMIN').map((r) => r.label)).toEqual(['Usuarios', 'Carta', 'Mozo', 'Cocina', 'Caja']);
   });
 
   it('los demás roles solo ven su pantalla', () => {

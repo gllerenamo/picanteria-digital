@@ -47,3 +47,49 @@ model Session {
   @@index([userId])
   @@map("sessions")
 }
+
+model MenuCategory {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique @db.VarChar(50)
+  sortOrder Int        @default(0) @map("sort_order")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  items     MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  categoryId  String       @map("category_id") @db.Uuid
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name        String       @db.VarChar(100)
+  description String?      @db.VarChar(255)
+  price       Decimal      @db.Decimal(10, 2)
+  isAvailable Boolean      @default(true) @map("is_available")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+enum TableStatus {
+  LIBRE
+  OCUPADA
+  POR_COBRAR
+}
+
+model DiningTable {
+  id          String      @id @default(uuid()) @db.Uuid
+  tableNumber Int         @unique @map("table_number")
+  capacity    Int         @default(4)
+  status      TableStatus @default(LIBRE)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("dining_tables")
+}

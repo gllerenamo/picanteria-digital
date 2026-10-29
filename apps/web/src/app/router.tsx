@@ -7,6 +7,7 @@ import { RequireRole } from '../features/auth/RequireRole';
 import { CashierHome } from '../features/role-home/CashierHome';
 import { KitchenHome } from '../features/role-home/KitchenHome';
 import { WaiterHome } from '../features/role-home/WaiterHome';
+import { MenuPage } from '../features/menu/MenuPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { AppShell } from './AppShell';
 
@@ -23,6 +24,7 @@ export const routes: RouteObject[] = [
             element: <RequireRole />,
             children: [
               { path: '/admin/usuarios', element: <UsersPage /> },
+              { path: '/admin/carta', element: <MenuPage /> },
               { path: '/mozo', element: <WaiterHome /> },
               { path: '/cocina', element: <KitchenHome /> },
               { path: '/caja', element: <CashierHome /> },

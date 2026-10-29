@@ -36,6 +36,7 @@ export interface AppRoute {
 
 export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/admin/usuarios', label: 'Usuarios', roles: [] },
+  { path: '/admin/carta', label: 'Carta', roles: [] },
   { path: '/mozo', label: 'Mozo', roles: ['WAITER'] },
   { path: '/cocina', label: 'Cocina', roles: ['KITCHEN'] },
   { path: '/caja', label: 'Caja', roles: ['CASHIER'] },
