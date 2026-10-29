@@ -120,8 +120,8 @@ y se verifica la secuencia permitida, el registro de horas y el retiro de la com
 6. **AC-2.6** — **Dado** dos pantallas de cocina abiertas, **cuando** en una se cambia el
    estado de un ítem, **entonces** la otra muestra el cambio en pocos segundos sin recargar.
 7. **AC-2.7** — **Dado** un usuario con rol Mozo o Cajero, **cuando** intenta cambiar el
-   estado de un ítem de cocina, **entonces** el sistema lo rechaza con el mensaje "No tienes
-   permiso para cambiar el estado de los platos".
+   estado de un ítem de cocina, **entonces** el sistema lo rechaza con el mensaje de permiso de
+   la Base común ("No tienes permiso para realizar esta acción") y el estado no cambia.
 8. **AC-2.8** — **Dado** un ítem "Listo" cuyo aviso el mozo ya marcó como "Visto",
    **cuando** la cocina intenta deshacer ese "Listo", **entonces** el sistema no lo permite y
    muestra "El mozo ya recogió este plato".

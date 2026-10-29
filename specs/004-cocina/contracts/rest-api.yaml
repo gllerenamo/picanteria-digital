@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: Picantería Digital — API de cocina (004-cocina)
+  version: 0.1.0
+  description: |
+    Endpoints del módulo `kitchen`. Todos van bajo el prefijo global `/api`, requieren sesión
+    (cookie `sid`) y, en las peticiones que modifican datos, la cabecera CSRF de la 001.
+    El administrador pasa todos los controles de rol (001, FR-011). Los errores siguen el
+    formato `ApiError` de la 001 con mensajes en español.
+servers:
+  - url: /api
+tags:
+  - name: Cocina
+  - name: Avisos al mozo
+
+paths:
+  /kitchen/board:
+    get:
+      tags: [Cocina]
+      summary: Tablero de cocina (comandas activas, completadas y avisos de anulación)
+      description: Solo rol KITCHEN (y ADMIN). Fuente de verdad de la pantalla `/cocina`.
+      responses:
+        '200':
+          description: Tablero actual
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KitchenBoard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /kitchen/items/{itemId}/advance:
+    post:
+      tags: [Cocina]
+      summary: Avanzar un ítem un paso (Pendiente → En preparación → Listo)
+      description: |
+        Solo rol KITCHEN. `from` es el estado que mostraba la pantalla. Al pasar a READY se crea
+        el aviso para el mozo responsable y se emite `kitchen:ready-notice`.
+      parameters: [{ $ref: '#/components/parameters/ItemId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from]
+              properties:
+                from: { type: string, enum: [PENDING, PREPARING] }
+      responses:
+        '200':
+          description: Ítem actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `ITEM_STATE_CONFLICT` (el estado ya cambió; `details.current` trae el actual) o
+            `ITEM_VOIDED` (el ítem fue anulado).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /kitchen/items/{itemId}/undo:
+    post:
+      tags: [Cocina]
+      summary: Deshacer el último paso de un ítem
+      parameters: [{ $ref: '#/components/parameters/ItemId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from]
+              properties:
+                from: { type: string, enum: [PREPARING, READY] }
+      responses:
+        '200':
+          description: Ítem devuelto al estado anterior
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `ITEM_STATE_CONFLICT`, `ITEM_VOIDED`, `READY_ALREADY_SEEN` ("El mozo ya recogió este
+            plato") o `UNDO_NOT_ALLOWED` (la comanda lleva más de 30 minutos completada).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /kitchen/void-notices/{itemVoidId}/ack:
+    post:
+      tags: [Cocina]
+      summary: Confirmar ("Entendido") un aviso de anulación
+      description: Idempotente. Emite `kitchen:void-acknowledged` a todas las pantallas de cocina.
+      parameters:
+        - name: itemVoidId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Confirmado (o ya lo estaba) }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /kitchen/ready-notices:
+    get:
+      tags: [Avisos al mozo]
+      summary: Avisos de plato listo abiertos del usuario actual
+      description: Rol WAITER (y ADMIN). Devuelve solo los avisos dirigidos al usuario de la sesión.
+      responses:
+        '200':
+          description: Avisos sin ver, del más antiguo al más reciente
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ReadyNotice' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /kitchen/ready-notices/{noticeId}/seen:
+    post:
+      tags: [Avisos al mozo]
+      summary: Marcar un aviso como "Visto"
+      description: Idempotente. Solo el destinatario. Emite `kitchen:ready-notice-closed` con `reason SEEN`.
+      parameters:
+        - name: noticeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Marcado como visto }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  parameters:
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthenticated:
+      description: Sin sesión válida (`UNAUTHENTICATED`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Rol sin permiso (`FORBIDDEN`, "No tienes permiso para realizar esta acción")
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: No existe (`NOT_FOUND`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string, description: Mensaje en español para mostrar }
+        details: { type: object, additionalProperties: true }
+
+    ItemStatus:
+      type: string
+      enum: [PENDING, PREPARING, READY, VOIDED]
+
+    KitchenBoard:
+      type: object
+      required: [serverTime, active, completed, voidNotices]
+      properties:
+        serverTime: { type: string, format: date-time }
+        active:
+          type: array
+          description: Comandas activas y anuladas sin confirmar, por `sequence` ascendente
+          items: { $ref: '#/components/schemas/Ticket' }
+        completed:
+          type: array
+          description: Comandas completadas en los últimos 30 minutos, la más reciente primero
+          items: { $ref: '#/components/schemas/Ticket' }
+        voidNotices:
+          type: array
+          description: Anulaciones sin "Entendido", en orden de llegada
+          items: { $ref: '#/components/schemas/VoidNotice' }
+
+    Ticket:
+      type: object
+      required: [dispatchId, sequence, tableNumber, round, sentBy, sentAt, state, items]
+      properties:
+        dispatchId: { type: string, format: uuid }
+        sequence: { type: integer, minimum: 1, description: Número correlativo del envío }
+        tableNumber: { type: integer }
+        round: { type: integer, minimum: 1, description: '1 = primera ronda de la mesa' }
+        sentBy:
+          type: object
+          required: [id, fullName]
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+        sentAt: { type: string, format: date-time }
+        state: { type: string, enum: [ACTIVE, COMPLETED, VOIDED] }
+        completedAt: { type: [string, 'null'], format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TicketItem' }
+
+    TicketItem:
+      type: object
+      required: [id, name, quantity, voidedQuantity, toPrepare, status, statusChangedAt, canUndo]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, description: Nombre del plato o bebida }
+        quantity: { type: integer, minimum: 1 }
+        voidedQuantity: { type: integer, minimum: 0 }
+        toPrepare: { type: integer, minimum: 0, description: quantity − voidedQuantity }
+        notes: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/ItemStatus' }
+        statusChangedAt: { type: string, format: date-time }
+        canUndo: { type: boolean }
+
+    VoidNotice:
+      type: object
+      required: [itemVoidId, tableNumber, itemName, units, voidedAt]
+      properties:
+        itemVoidId: { type: string, format: uuid }
+        dispatchId: { type: string, format: uuid }
+        tableNumber: { type: integer }
+        itemName: { type: string }
+        units: { type: integer, minimum: 1 }
+        voidedAt: { type: string, format: date-time }
+
+    ReadyNotice:
+      type: object
+      required: [id, orderItemId, tableNumber, itemName, quantity, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderItemId: { type: string, format: uuid }
+        tableNumber: { type: integer }
+        itemName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
