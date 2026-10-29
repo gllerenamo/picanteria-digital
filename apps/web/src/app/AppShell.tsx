@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from 'react-router';
 import { useCurrentUser, useLogout } from '../features/auth/session';
 import { useRealtime } from '../features/auth/useRealtime';
+import { RealtimeProvider } from '../lib/realtime-context';
 import { NavMenu } from './NavMenu';
 
 /** Marco de las pantallas internas: encabezado con el usuario y "Cerrar sesión" (FR-006). */
@@ -8,7 +9,7 @@ export function AppShell() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const navigate = useNavigate();
-  useRealtime();
+  const realtime = useRealtime();
 
   const onLogout = () => {
     logout.mutate(undefined, {
@@ -40,7 +41,9 @@ export function AppShell() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <Outlet />
+        <RealtimeProvider value={realtime}>
+          <Outlet />
+        </RealtimeProvider>
       </main>
     </div>
   );

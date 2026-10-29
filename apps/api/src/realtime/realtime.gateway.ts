@@ -79,4 +79,17 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   profileChanged(userId: string, payload: ProfileChangedPayload): void {
     this.server.to(userRoom(userId)).emit(REALTIME_EVENTS.PROFILE_CHANGED, payload);
   }
+
+  /**
+   * Emite un evento a las salas de los roles indicados. Un socket que está en varias de esas
+   * salas (el administrador) lo recibe una sola vez. Se llama después de confirmar la
+   * transacción que originó el cambio.
+   */
+  emitToRoles<E extends keyof ServerToClientEvents>(
+    roles: readonly Role[],
+    event: E,
+    ...args: Parameters<ServerToClientEvents[E]>
+  ): void {
+    this.server.to(roles.map(roleRoom)).emit(event, ...args);
+  }
 }

@@ -19,8 +19,11 @@ export class ApiError extends Error {
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
-async function request(method: Method, path: string, body?: unknown): Promise<Response> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+/** Cabeceras adicionales de una petición (por ejemplo, `Idempotency-Key` del envío a cocina). */
+type ExtraHeaders = Record<string, string>;
+
+async function request(method: Method, path: string, body?: unknown, extraHeaders?: ExtraHeaders): Promise<Response> {
+  const headers: Record<string, string> = { ...extraHeaders, Accept: 'application/json' };
   if (MUTATING_METHODS.has(method)) headers['X-Requested-With'] = 'picanteria-web';
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
@@ -53,12 +56,13 @@ export async function requestJson<TSchema extends z.ZodTypeAny>(
   path: string,
   schema: TSchema,
   body?: unknown,
+  headers?: ExtraHeaders,
 ): Promise<z.output<TSchema>> {
-  const response = await request(method, path, body);
+  const response = await request(method, path, body, headers);
   return schema.parse(await response.json()) as z.output<TSchema>;
 }
 
 /** Petición sin cuerpo de respuesta (204). */
-export async function requestVoid(method: Method, path: string, body?: unknown): Promise<void> {
-  await request(method, path, body);
+export async function requestVoid(method: Method, path: string, body?: unknown, headers?: ExtraHeaders): Promise<void> {
+  await request(method, path, body, headers);
 }
