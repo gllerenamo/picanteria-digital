@@ -1,0 +1,6 @@
+[
+  { "key": "admin", "username": "admin.e2e", "password": "e2e-admin-clave", "fullName": "Administrador de Pruebas", "role": "ADMIN" },
+  { "key": "mozo", "username": "mozo.e2e", "password": "e2e-mozo-clave", "fullName": "Mozo de Pruebas", "role": "WAITER" },
+  { "key": "cocina", "username": "cocina.e2e", "password": "e2e-cocina-clave", "fullName": "Cocina de Pruebas", "role": "KITCHEN" },
+  { "key": "caja", "username": "caja.e2e", "password": "e2e-caja-clave", "fullName": "Cajero de Pruebas", "role": "CASHIER" }
+]

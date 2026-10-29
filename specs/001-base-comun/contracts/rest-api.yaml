@@ -404,6 +404,7 @@ components:
             - USERNAME_TAKEN
             - LAST_ADMIN
             - CANNOT_DISABLE_SELF
+            - INTERNAL_ERROR
         message:
           type: string
           description: Mensaje en español para mostrar al usuario.

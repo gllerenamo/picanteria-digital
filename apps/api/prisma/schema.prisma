@@ -1,0 +1,49 @@
+// Modelo de datos de specs/001-base-comun/data-model.md (sección 2).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  WAITER
+  KITCHEN
+  CASHIER
+}
+
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  fullName            String    @map("full_name") @db.VarChar(100)
+  /// Sin espacios en los extremos y en minúsculas (único sin distinguir mayúsculas).
+  username            String    @unique @db.VarChar(30)
+  /// Hash Argon2id. Nunca se devuelve en ninguna respuesta.
+  passwordHash        String    @map("password_hash")
+  role                Role
+  isActive            Boolean   @default(true) @map("is_active")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  sessions            Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// SHA-256 (hexadecimal) del token de la cookie; el token en claro nunca se guarda.
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  userAgent String?   @map("user_agent") @db.VarChar(255)
+
+  @@index([userId])
+  @@map("sessions")
+}
