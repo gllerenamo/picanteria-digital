@@ -1,3 +1,4 @@
+import type { ReadyNotice } from './schemas/kitchen';
 import type { TableStatus } from './schemas/menu';
 
 /** Eventos de tiempo real (specs/001-base-comun/contracts/websocket-events.md). */
@@ -8,8 +9,11 @@ export const REALTIME_EVENTS = {
   DISPATCH_SENT: 'orders:dispatch-sent',
   ITEM_VOIDED: 'orders:item-voided',
   TABLE_STATUS_CHANGED: 'orders:table-status-changed',
-  // 004-cocina: la vista del mozo lo escucha para ver los cambios de estado.
+  // 004-cocina (specs/004-cocina/contracts/websocket-events.md).
   ITEM_STATUS_CHANGED: 'kitchen:item-status-changed',
+  READY_NOTICE: 'kitchen:ready-notice',
+  READY_NOTICE_CLOSED: 'kitchen:ready-notice-closed',
+  VOID_ACKNOWLEDGED: 'kitchen:void-acknowledged',
 } as const;
 
 export interface SessionRevokedPayload {
@@ -70,6 +74,20 @@ export interface ItemStatusChangedPayload {
   changedAt: string;
 }
 
+/** Aviso de plato listo para el mozo responsable de la mesa. */
+export type ReadyNoticePayload = ReadyNotice;
+
+/** El aviso se cerró: el mozo tocó "Visto" o la cocina deshizo el "Listo". */
+export interface ReadyNoticeClosedPayload {
+  id: string;
+  reason: 'SEEN' | 'UNDONE';
+}
+
+/** Alguien de cocina tocó "Entendido" en un aviso de anulación. */
+export interface VoidAcknowledgedPayload {
+  itemVoidId: string;
+}
+
 /** Tipado de los eventos que el servidor envía al cliente. */
 export interface ServerToClientEvents {
   'auth:session-revoked': (payload: SessionRevokedPayload) => void;
@@ -78,4 +96,7 @@ export interface ServerToClientEvents {
   'orders:item-voided': (payload: ItemVoidedPayload) => void;
   'orders:table-status-changed': (payload: TableStatusChangedPayload) => void;
   'kitchen:item-status-changed': (payload: ItemStatusChangedPayload) => void;
+  'kitchen:ready-notice': (payload: ReadyNoticePayload) => void;
+  'kitchen:ready-notice-closed': (payload: ReadyNoticeClosedPayload) => void;
+  'kitchen:void-acknowledged': (payload: VoidAcknowledgedPayload) => void;
 }

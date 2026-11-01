@@ -4,8 +4,8 @@ import { HomeRedirect } from '../features/auth/HomeRedirect';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth } from '../features/auth/RequireAuth';
 import { RequireRole } from '../features/auth/RequireRole';
+import { KitchenBoardPage } from '../features/kitchen/KitchenBoardPage';
 import { CashierHome } from '../features/role-home/CashierHome';
-import { KitchenHome } from '../features/role-home/KitchenHome';
 import { MenuPage } from '../features/menu/MenuPage';
 import { OrderPage } from '../features/orders/OrderPage';
 import { TablesBoardPage } from '../features/orders/TablesBoardPage';
@@ -28,7 +28,7 @@ export const routes: RouteObject[] = [
               { path: '/admin/carta', element: <MenuPage /> },
               { path: '/mozo', element: <TablesBoardPage /> },
               { path: '/mozo/pedidos/:orderId', element: <OrderPage /> },
-              { path: '/cocina', element: <KitchenHome /> },
+              { path: '/cocina', element: <KitchenBoardPage /> },
               { path: '/caja', element: <CashierHome /> },
             ],
           },

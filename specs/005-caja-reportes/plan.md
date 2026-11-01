@@ -27,7 +27,7 @@ su decorador `IdempotencyKey`. Cinco tablas nuevas (`payments`, `bill_splits`, `
 **Primary Dependencies**: las existentes (NestJS 11, Prisma 6, Socket.IO 4, Zod, React 19,
 TanStack Query, react-hook-form, Tailwind). Sin dependencias nuevas.
 
-**Storage**: PostgreSQL 17; nueva migración `20261029000003_billing` con tablas, índices
+**Storage**: PostgreSQL 17; nueva migración `20261029000004_billing` con tablas, índices
 parciales y `CHECK` escritos a mano donde Prisma no los expresa.
 
 **Testing**: Jest + Supertest contra `picanteria_test` (aceptación de la API, con
@@ -112,7 +112,7 @@ packages/shared/src/
 apps/api/
 ├── prisma/
 │   ├── schema.prisma        # + Payment, BillSplit, BillPart, BillPartItem, DayClosure y enums
-│   ├── migrations/20261029000003_billing/
+│   ├── migrations/20261029000004_billing/
 │   └── seed-e2e.ts          # + mesas por cobrar con consumo para las e2e
 ├── src/billing/
 │   ├── billing.module.ts

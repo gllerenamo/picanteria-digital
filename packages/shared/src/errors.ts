@@ -30,6 +30,11 @@ export const ERROR_CODES = [
   'HAS_UNSENT_ITEMS',
   'NO_CONSUMPTION',
   'CANCEL_NOT_ALLOWED',
+  // 004-cocina (specs/004-cocina/contracts/rest-api.yaml).
+  'ITEM_STATE_CONFLICT',
+  'ITEM_VOIDED',
+  'READY_ALREADY_SEEN',
+  'UNDO_NOT_ALLOWED',
   'INTERNAL_ERROR',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -63,6 +68,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   HAS_UNSENT_ITEMS: 'Hay ítems sin enviar. Envíalos o quítalos antes de pedir la cuenta.',
   NO_CONSUMPTION: 'La mesa no tiene consumo. Si se abrió por error, cancela la apertura.',
   CANCEL_NOT_ALLOWED: 'No se puede cancelar: esta mesa ya tiene pedidos enviados a cocina.',
+  ITEM_STATE_CONFLICT: 'Otro usuario ya cambió este plato. Revisa su estado actual.',
+  ITEM_VOIDED: 'Este plato fue anulado',
+  READY_ALREADY_SEEN: 'El mozo ya recogió este plato',
+  UNDO_NOT_ALLOWED: 'Ya no se puede deshacer este cambio',
   INTERNAL_ERROR: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
 };
 

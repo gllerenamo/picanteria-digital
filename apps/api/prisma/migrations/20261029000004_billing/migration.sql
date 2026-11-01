@@ -142,6 +142,7 @@ ALTER TABLE "bill_part_items" ADD CONSTRAINT "bill_part_items_order_item_id_fkey
 -- AddForeignKey
 ALTER TABLE "day_closures" ADD CONSTRAINT "day_closures_cashier_id_fkey" FOREIGN KEY ("cashier_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+
 -- Agregado a mano (specs/005-caja-reportes/data-model.md): restricciones que Prisma no expresa.
 ALTER TABLE "payments" ADD CONSTRAINT "payments_amount_check" CHECK ("amount" > 0);
 ALTER TABLE "payments" ADD CONSTRAINT "payments_cash_received_check" CHECK (("method" = 'CASH') = ("received_amount" IS NOT NULL));
