@@ -5,6 +5,8 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth } from '../features/auth/RequireAuth';
 import { RequireRole } from '../features/auth/RequireRole';
 import { AccountPage } from '../features/billing/AccountPage';
+import { ClosurePage } from '../features/billing/ClosurePage';
+import { ClosuresHistoryPage } from '../features/billing/ClosuresHistoryPage';
 import { PendingAccountsPage } from '../features/billing/PendingAccountsPage';
 import { KitchenBoardPage } from '../features/kitchen/KitchenBoardPage';
 import { MenuPage } from '../features/menu/MenuPage';
@@ -32,6 +34,8 @@ export const routes: RouteObject[] = [
               { path: '/cocina', element: <KitchenBoardPage /> },
               { path: '/caja', element: <PendingAccountsPage /> },
               { path: '/caja/cuentas/:orderId', element: <AccountPage /> },
+              { path: '/caja/cierre', element: <ClosurePage /> },
+              { path: '/caja/cierres', element: <ClosuresHistoryPage /> },
             ],
           },
           { path: '/sin-permiso', element: <ForbiddenPage /> },

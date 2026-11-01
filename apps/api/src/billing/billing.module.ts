@@ -5,12 +5,14 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { BillingNotifier } from './billing-notifier';
+import { ClosuresController } from './closures.controller';
+import { ClosuresService } from './closures.service';
 import { SplitsService } from './splits.service';
 
 /** Caja y reportes (specs/005-caja-reportes). */
 @Module({
   imports: [PrismaModule, MenuModule, RealtimeModule],
-  controllers: [AccountsController],
-  providers: [AccountsService, SplitsService, BillingNotifier],
+  controllers: [AccountsController, ClosuresController],
+  providers: [AccountsService, SplitsService, ClosuresService, BillingNotifier],
 })
 export class BillingModule {}
