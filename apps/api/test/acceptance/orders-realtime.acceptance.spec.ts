@@ -4,6 +4,7 @@ import type { User } from '@prisma/client';
 import request from 'supertest';
 import type { PrismaService } from '../../src/prisma/prisma.service';
 import { createTestApp, prismaOf } from '../helpers/app';
+import { pay } from '../helpers/billing-factories';
 import { resetDb } from '../helpers/db';
 import { CSRF, createUser } from '../helpers/factories';
 import {
@@ -13,7 +14,6 @@ import {
   createOpenOrder,
   createSentItem,
   createTable,
-  simulateCashierPayment,
 } from '../helpers/order-factories';
 import { connectAs, expectNoEvent, listen, nextEvent, sessionCookie, type TestSocket } from '../helpers/realtime';
 
@@ -139,8 +139,8 @@ describe('Feature 003 — eventos de tiempo real de mesas y pedidos', () => {
     await createSentItem(prisma, await createDispatch(prisma, order.id, juan.id), await createMenuItem(prisma));
     const received = nextEvent(rosaSocket, 'orders:table-status-changed');
 
-    // Lo que hará Caja (005) al cobrar; su prueba de cobro reemplazará a este sustituto.
-    await simulateCashierPayment(app, prisma, order.id);
+    // Cobro real de Caja (005): un plato de S/ 24.50 (precio por defecto de createMenuItem).
+    await pay(await asUser(await user('CASHIER')), order.id, { method: 'CARD', amount: 24.5 }).expect(201);
 
     await expect(received).resolves.toMatchObject({ tableId: table.id, status: 'LIBRE', orderId: order.id });
   });

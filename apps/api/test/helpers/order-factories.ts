@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   DiningTable,
   KitchenDispatch,
@@ -9,9 +8,7 @@ import type {
   OrderItemStatus,
   TableStatus,
 } from '@prisma/client';
-import { TablesService } from '../../src/menu/tables.service';
 import type { PrismaService } from '../../src/prisma/prisma.service';
-import { RealtimeGateway } from '../../src/realtime/realtime.gateway';
 
 /** Fábricas de la 003: insertan directo con Prisma para preparar cada escenario. */
 
@@ -118,26 +115,3 @@ export function createSentItem(
   });
 }
 
-/**
- * Hace lo que hará Caja (005) al cobrar: mesa `POR_COBRAR → LIBRE` y pedido `PAID` en una
- * transacción, y después el evento `orders:table-status-changed` (research.md §16). La prueba de
- * cobro de la 005 reemplazará a este sustituto.
- */
-export async function simulateCashierPayment(app: NestExpressApplication, prisma: PrismaService, orderId: string): Promise<void> {
-  const tables = app.get(TablesService);
-  const realtime = app.get(RealtimeGateway);
-  const order = await prisma.$transaction(async (tx) => {
-    const current = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { table: true } });
-    const changed = await tables.transition(tx, current.tableId, ['POR_COBRAR'], 'LIBRE');
-    if (!changed) throw new Error(`La mesa ${current.table.tableNumber} no estaba por cobrar`);
-    await tx.order.update({ where: { id: orderId }, data: { status: 'PAID', closedAt: new Date() } });
-    return current;
-  });
-  realtime.emitToRoles(['WAITER', 'CASHIER'], 'orders:table-status-changed', {
-    tableId: order.tableId,
-    tableNumber: order.table.tableNumber,
-    status: 'LIBRE',
-    orderId,
-    changedAt: new Date().toISOString(),
-  });
-}

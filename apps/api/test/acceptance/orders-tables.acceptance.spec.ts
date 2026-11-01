@@ -1,9 +1,10 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import type { OrderDetail, TableOverview } from '@picanteria/shared';
+import type { AccountDetail, OrderDetail, TableOverview } from '@picanteria/shared';
 import type { User } from '@prisma/client';
 import type TestAgent from 'supertest/lib/agent';
 import type { PrismaService } from '../../src/prisma/prisma.service';
 import { createTestApp, prismaOf } from '../helpers/app';
+import { pay } from '../helpers/billing-factories';
 import { resetDb } from '../helpers/db';
 import { createUser, loginAs } from '../helpers/factories';
 import {
@@ -13,7 +14,6 @@ import {
   createOpenOrder,
   createSentItem,
   createTable,
-  simulateCashierPayment,
 } from '../helpers/order-factories';
 
 describe('Feature 003 — US1 y US6: mesas, apertura y cuenta', () => {
@@ -190,7 +190,10 @@ describe('Feature 003 — US1 y US6: mesas, apertura y cuenta', () => {
     const { order, table } = await orderWithConsumption();
     await juanAgent.post(`/api/orders/${order.id}/request-bill`).expect(200);
 
-    await simulateCashierPayment(app, prisma, order.id);
+    // Cobro real de Caja (005) por el total de la cuenta.
+    const cashier = await loginAs(app, await createUser(prisma, { role: 'CASHIER' }));
+    const account = (await cashier.get(`/api/billing/accounts/${order.id}`).expect(200)).body as AccountDetail;
+    await pay(cashier, order.id, { method: 'CARD', amount: account.total.amount }).expect(201);
 
     const tables = (await rosaAgent.get('/api/orders/tables').expect(200)).body as TableOverview[];
     expect(tables.find((t) => t.id === table.id)).toMatchObject({ status: 'LIBRE', order: null });

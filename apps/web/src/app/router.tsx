@@ -4,8 +4,9 @@ import { HomeRedirect } from '../features/auth/HomeRedirect';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth } from '../features/auth/RequireAuth';
 import { RequireRole } from '../features/auth/RequireRole';
+import { AccountPage } from '../features/billing/AccountPage';
+import { PendingAccountsPage } from '../features/billing/PendingAccountsPage';
 import { KitchenBoardPage } from '../features/kitchen/KitchenBoardPage';
-import { CashierHome } from '../features/role-home/CashierHome';
 import { MenuPage } from '../features/menu/MenuPage';
 import { OrderPage } from '../features/orders/OrderPage';
 import { TablesBoardPage } from '../features/orders/TablesBoardPage';
@@ -29,7 +30,8 @@ export const routes: RouteObject[] = [
               { path: '/mozo', element: <TablesBoardPage /> },
               { path: '/mozo/pedidos/:orderId', element: <OrderPage /> },
               { path: '/cocina', element: <KitchenBoardPage /> },
-              { path: '/caja', element: <CashierHome /> },
+              { path: '/caja', element: <PendingAccountsPage /> },
+              { path: '/caja/cuentas/:orderId', element: <AccountPage /> },
             ],
           },
           { path: '/sin-permiso', element: <ForbiddenPage /> },
