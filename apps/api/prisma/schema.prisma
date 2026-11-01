@@ -33,6 +33,10 @@ model User {
   ordersOpened        Order[]           @relation("OrderWaiter")
   dispatchesSent      KitchenDispatch[] @relation("DispatchSentBy")
   itemVoids           ItemVoid[]        @relation("ItemVoidedBy")
+  paymentsTaken       Payment[]         @relation("PaymentCashier")
+  paymentsVoided      Payment[]         @relation("PaymentVoidedBy")
+  splitsCreated       BillSplit[]       @relation("SplitCreatedBy")
+  closures            DayClosure[]      @relation("ClosureCashier")
 
   @@map("users")
 }
@@ -131,6 +135,8 @@ model Order {
   closedAt   DateTime?         @map("closed_at") @db.Timestamptz(3)
   items      OrderItem[]
   dispatches KitchenDispatch[]
+  payments   Payment[]
+  splits     BillSplit[]
 
   @@index([tableId])
   @@index([waiterId])
@@ -156,6 +162,7 @@ model OrderItem {
   createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   voids          ItemVoid[]
+  partItems      BillPartItem[]
 
   @@index([orderId, status])
   @@index([dispatchId])
@@ -191,4 +198,124 @@ model ItemVoid {
 
   @@index([orderItemId])
   @@map("item_voids")
+}
+
+// Modelo de datos de specs/005-caja-reportes/data-model.md. Los CHECK de payments y
+// bill_part_items y el índice único parcial de bill_splits se agregan a mano en la migración.
+
+enum PaymentMethod {
+  CASH
+  YAPE_PLIN
+  CARD
+}
+
+enum PaymentStatus {
+  VALID
+  VOIDED
+}
+
+enum SplitMode {
+  EQUAL
+  BY_ITEMS
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  orderId        String        @map("order_id") @db.Uuid
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  partId         String?       @map("part_id") @db.Uuid
+  part           BillPart?     @relation(fields: [partId], references: [id], onDelete: Restrict)
+  /// Nulo hasta que un cierre del día lo incluye; después no cambia.
+  closureId      String?       @map("closure_id") @db.Uuid
+  closure        DayClosure?   @relation(fields: [closureId], references: [id], onDelete: Restrict)
+  method         PaymentMethod
+  /// Monto aplicado a la cuenta.
+  amount         Decimal       @db.Decimal(10, 2)
+  /// Solo en efectivo.
+  receivedAmount Decimal?      @map("received_amount") @db.Decimal(10, 2)
+  changeAmount   Decimal?      @map("change_amount") @db.Decimal(10, 2)
+  /// Número de operación o de voucher (Yape/Plin y tarjeta).
+  reference      String?       @db.VarChar(40)
+  idempotencyKey String        @unique @map("idempotency_key") @db.Uuid
+  cashierId      String        @map("cashier_id") @db.Uuid
+  cashier        User          @relation("PaymentCashier", fields: [cashierId], references: [id], onDelete: Restrict)
+  paidAt         DateTime      @default(now()) @map("paid_at") @db.Timestamptz(3)
+  status         PaymentStatus @default(VALID)
+  voidReason     String?       @map("void_reason") @db.VarChar(200)
+  voidedById     String?       @map("voided_by_id") @db.Uuid
+  voidedBy       User?         @relation("PaymentVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+  voidedAt       DateTime?     @map("voided_at") @db.Timestamptz(3)
+
+  @@index([orderId, status])
+  @@index([closureId])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model BillSplit {
+  id           String     @id @default(uuid()) @db.Uuid
+  orderId      String     @map("order_id") @db.Uuid
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  mode         SplitMode
+  /// Saldo pendiente al dividir.
+  baseAmount   Decimal    @map("base_amount") @db.Decimal(10, 2)
+  createdById  String     @map("created_by_id") @db.Uuid
+  createdBy    User       @relation("SplitCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Nulo = división vigente (una por pedido).
+  supersededAt DateTime?  @map("superseded_at") @db.Timestamptz(3)
+  parts        BillPart[]
+
+  @@index([orderId])
+  @@map("bill_splits")
+}
+
+model BillPart {
+  id       String         @id @default(uuid()) @db.Uuid
+  splitId  String         @map("split_id") @db.Uuid
+  split    BillSplit      @relation(fields: [splitId], references: [id], onDelete: Restrict)
+  position Int
+  label    String         @db.VarChar(30)
+  amount   Decimal        @db.Decimal(10, 2)
+  items    BillPartItem[]
+  payments Payment[]
+
+  @@unique([splitId, position])
+  @@map("bill_parts")
+}
+
+model BillPartItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  partId      String    @map("part_id") @db.Uuid
+  part        BillPart  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  orderItemId String    @map("order_item_id") @db.Uuid
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  units       Int
+
+  @@index([partId])
+  @@index([orderItemId])
+  @@map("bill_part_items")
+}
+
+model DayClosure {
+  id               String    @id @default(uuid()) @db.Uuid
+  cashierId        String    @map("cashier_id") @db.Uuid
+  cashier          User      @relation("ClosureCashier", fields: [cashierId], references: [id], onDelete: Restrict)
+  startedAt        DateTime? @map("started_at") @db.Timestamptz(3)
+  closedAt         DateTime  @default(now()) @map("closed_at") @db.Timestamptz(3)
+  expectedCash     Decimal   @map("expected_cash") @db.Decimal(10, 2)
+  countedCash      Decimal   @map("counted_cash") @db.Decimal(10, 2)
+  expectedYapePlin Decimal   @map("expected_yape_plin") @db.Decimal(10, 2)
+  countedYapePlin  Decimal   @map("counted_yape_plin") @db.Decimal(10, 2)
+  expectedCard     Decimal   @map("expected_card") @db.Decimal(10, 2)
+  countedCard      Decimal   @map("counted_card") @db.Decimal(10, 2)
+  /// Suma de lo registrado.
+  total            Decimal   @db.Decimal(10, 2)
+  accountsCount    Int       @map("accounts_count")
+  /// Obligatoria si alguna diferencia es distinta de cero.
+  notes            String?   @db.VarChar(300)
+  payments         Payment[]
+
+  @@index([closedAt])
+  @@map("day_closures")
 }
