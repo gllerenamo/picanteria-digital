@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { loginAs, type E2eUserKey } from './helpers/auth';
+import { billRequested, CSRF, openSession } from './helpers/billing';
 
 // SC-006, FR-024 y Principio IV: pantallas de ingreso, mozo y cocina utilizables en tablet.
 const SCREENS: Array<{ path: string; user: E2eUserKey | null }> = [
@@ -84,5 +86,49 @@ test.describe('Principio IV — Pedido de una mesa', () => {
     await page.getByRole('button', { name: 'Cancelar apertura' }).click();
     await page.getByRole('button', { name: 'Confirmar' }).click();
     await expect(page).toHaveURL(/\/mozo$/);
+  });
+});
+
+// 005-caja-reportes: caja también se usa en tablet (Principio IV, T056).
+test.describe('Principio IV — Caja', () => {
+  test('SC-006: /caja y la cuenta de una mesa no tienen desplazamiento horizontal y sus controles miden al menos 44×44 px', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const waiter = await openSession(browser, testInfo, 'mozo');
+    const bill = await billRequested(waiter);
+    await waiter.context().close();
+    await loginAs(page, 'caja');
+
+    for (const path of ['/caja', `/caja/cuentas/${bill.orderId}`]) {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
+      const tooSmall = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('main button, main a, main input, main select, main textarea, main label'))
+          .filter((element) => {
+            // Las opciones del método de pago son etiquetas táctiles con su radio oculto.
+            if (element instanceof HTMLInputElement && element.type === 'radio') return false;
+            if (element instanceof HTMLLabelElement && !element.querySelector('input[type="radio"]')) return false;
+            const box = element.getBoundingClientRect();
+            const visible = box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+            return visible && (box.width < 44 || box.height < 44);
+          })
+          .map((element) => element.outerHTML.slice(0, 120)),
+      );
+      expect(tooSmall).toEqual([]);
+    }
+
+    // Deja la mesa libre: cobra con tarjeta por la API.
+    const paid = await page.request.post(`/api/billing/accounts/${bill.orderId}/payments`, {
+      headers: { ...CSRF, 'Idempotency-Key': randomUUID() },
+      data: { method: 'CARD', amount: bill.total },
+    });
+    expect(paid.ok()).toBe(true);
   });
 });

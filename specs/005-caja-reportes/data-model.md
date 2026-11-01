@@ -131,7 +131,8 @@ erDiagram
 | Pagado | Σ `Payment.amount` con `status = VALID` del pedido | Caja |
 | Saldo pendiente | Total − Pagado | Caja |
 | Parte pagada | Σ pagos vigentes con ese `partId` ≥ `BillPart.amount` | Caja |
-| División desactualizada (`isStale`) | `BillSplit.baseAmount` + pagos vigentes hechos antes de la división ≠ total actual | Caja ([research.md §6](research.md)) |
+| División desactualizada (`isStale`) | `BillSplit.baseAmount` + pagos vigentes que no son de sus partes ≠ total actual (cambió el total, o se registró o anuló un pago fuera de la división) | Caja ([research.md §6](research.md)) |
+| Unidades pagadas de un ítem (`paidUnits`) | Σ unidades de `BillPartItem` en partes pagadas (de cualquier división del pedido) | Caja |
 | Diferencia del cierre por método | `counted − expected` (positivo = sobrante, negativo = faltante) | Caja |
 
 ## 3. Entidades nuevas

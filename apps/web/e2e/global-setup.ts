@@ -1,8 +1,6 @@
-import { execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { seedE2e } from './helpers/seed';
 
 // Recrea los usuarios de prueba (uno por rol) en la base de Docker Compose.
 export default function globalSetup(): void {
-  const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
-  execSync('npm run db:seed:e2e -w @picanteria/api', { cwd: repoRoot, stdio: 'inherit' });
+  seedE2e();
 }
