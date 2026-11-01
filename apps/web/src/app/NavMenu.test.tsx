@@ -6,7 +6,7 @@ import { renderRoutes } from '../../tests/render';
 import { NavMenu } from './NavMenu';
 
 const expected: Record<Role, string[]> = {
-  ADMIN: ['Usuarios', 'Carta', 'Mozo', 'Cocina', 'Caja'],
+  ADMIN: ['Usuarios', 'Carta', 'Reportes', 'Mozo', 'Cocina', 'Caja'],
   WAITER: ['Mozo'],
   KITCHEN: ['Cocina'],
   CASHIER: ['Caja'],
