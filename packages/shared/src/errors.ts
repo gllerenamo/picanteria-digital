@@ -35,6 +35,18 @@ export const ERROR_CODES = [
   'ITEM_VOIDED',
   'READY_ALREADY_SEEN',
   'UNDO_NOT_ALLOWED',
+  // 005-caja-reportes (specs/005-caja-reportes/contracts/rest-api.yaml).
+  'BILL_NOT_REQUESTED',
+  'PAYMENT_EXCEEDS_BALANCE',
+  'INSUFFICIENT_CASH',
+  'PAYMENT_NOT_VOIDABLE',
+  'SPLIT_UNASSIGNED_UNITS',
+  'SPLIT_INVALID_ASSIGNMENT',
+  'SPLIT_STALE',
+  'ACCOUNT_HAS_BALANCE',
+  'CLOSURE_OPEN_TABLES',
+  'CLOSURE_NOTES_REQUIRED',
+  'INVALID_DATE_RANGE',
   'INTERNAL_ERROR',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -72,6 +84,17 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   ITEM_VOIDED: 'Este plato fue anulado',
   READY_ALREADY_SEEN: 'El mozo ya recogió este plato',
   UNDO_NOT_ALLOWED: 'Ya no se puede deshacer este cambio',
+  BILL_NOT_REQUESTED: 'El mozo debe pedir la cuenta antes de cobrar',
+  PAYMENT_EXCEEDS_BALANCE: 'El monto supera el saldo pendiente',
+  INSUFFICIENT_CASH: 'El monto recibido no alcanza para cubrir el pago',
+  PAYMENT_NOT_VOIDABLE: 'Este pago ya no se puede anular',
+  SPLIT_UNASSIGNED_UNITS: 'Asigna todas las unidades antes de confirmar la división',
+  SPLIT_INVALID_ASSIGNMENT: 'Hay unidades asignadas de más o ítems que no son de esta cuenta',
+  SPLIT_STALE: 'La cuenta cambió desde que se dividió. Vuelve a dividir el saldo.',
+  ACCOUNT_HAS_BALANCE: 'La cuenta tiene saldo pendiente; regístralo como pago',
+  CLOSURE_OPEN_TABLES: 'No puedes cerrar con mesas abiertas',
+  CLOSURE_NOTES_REQUIRED: 'Explica las diferencias en la observación antes de cerrar',
+  INVALID_DATE_RANGE: 'Elige un rango válido de hasta 366 días',
   INTERNAL_ERROR: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
 };
 
