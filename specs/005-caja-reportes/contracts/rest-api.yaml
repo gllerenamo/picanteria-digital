@@ -1,0 +1,593 @@
+openapi: 3.1.0
+info:
+  title: Picantería Digital — API de Caja y reportes
+  version: 1.0.0
+  description: |
+    Contrato HTTP de la feature 005-caja-reportes (módulo `billing` del backend).
+
+    - Mismas convenciones que la 001: prefijo `/api`, cookie `sid`, cabecera
+      `X-Requested-With: picanteria-web` en POST/PATCH/PUT/DELETE y errores `{ code, message, details? }`
+      con mensaje en español.
+    - `/billing/*`: rol `CASHIER` (el administrador siempre pasa). `/reports/*`: solo `ADMIN`.
+    - Los montos se responden con el esquema `Money` de la 003 (`{ amount, formatted }`) y se
+      reciben como números con hasta 2 decimales.
+servers:
+  - url: /api
+tags:
+  - name: accounts
+    description: Cuenta de la mesa, división y pagos
+  - name: closures
+    description: Cierre del día
+  - name: reports
+    description: Reportes (solo administrador)
+
+paths:
+  /billing/accounts:
+    get:
+      tags: [accounts]
+      summary: Mesas por cobrar
+      description: Pedidos `OPEN` con la mesa `POR_COBRAR`, ordenados por número de mesa (FR-001, AC-1.1).
+      responses:
+        '200':
+          description: Lista de cuentas pendientes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AccountSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /billing/accounts/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [accounts]
+      summary: Detalle de la cuenta
+      description: |
+        Ítems enviados con unidades vigentes, anuladas, precio y subtotal; total, pagado, saldo,
+        pagos (incluidos los anulados) y división vigente (FR-002, FR-003, AC-1.2). Funciona con el
+        pedido `OPEN` (mesa ocupada o por cobrar) o `PAID`.
+      responses:
+        '200':
+          description: Cuenta.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /billing/accounts/{orderId}/payments:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [accounts]
+      summary: Registrar un pago
+      description: |
+        Solo con la mesa `POR_COBRAR`. Si el saldo llega a cero: pedido `PAID`, mesa `LIBRE` y
+        evento `orders:table-status-changed` (FR-004 a FR-008, AC-1.3 a AC-1.6, AC-2.3 a AC-2.5).
+        Reintentar con la misma `Idempotency-Key` devuelve el resultado anterior.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePaymentRequest' }
+      responses:
+        '201':
+          description: Pago registrado; devuelve la cuenta actualizada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Regla de cobro incumplida.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notAwaiting:
+                  value: { code: BILL_NOT_REQUESTED, message: 'El mozo debe pedir la cuenta antes de cobrar' }
+                exceeds:
+                  value: { code: PAYMENT_EXCEEDS_BALANCE, message: 'El monto supera el saldo pendiente', details: { pending: 'S/ 42.00' } }
+                cash:
+                  value: { code: INSUFFICIENT_CASH, message: 'El monto recibido no alcanza para cubrir el pago' }
+                stale:
+                  value: { code: SPLIT_STALE, message: 'La cuenta cambió desde que se dividió. Vuelve a dividir el saldo.' }
+                paid:
+                  value: { code: ORDER_NOT_OPEN, message: 'Esta cuenta ya fue pagada o cancelada' }
+
+  /billing/accounts/{orderId}/payments/{paymentId}/void:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+      - name: paymentId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [accounts]
+      summary: Anular un pago
+      description: Solo mientras el pedido siga `OPEN` (FR-014, AC-2.7).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              additionalProperties: false
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 200 }
+      responses:
+        '200':
+          description: Pago anulado; devuelve la cuenta actualizada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: El pago ya estaba anulado o la cuenta ya está pagada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: PAYMENT_NOT_VOIDABLE, message: 'Este pago ya no se puede anular' }
+
+  /billing/accounts/{orderId}/split:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [accounts]
+      summary: Dividir el saldo pendiente
+      description: |
+        Reemplaza la división vigente. `EQUAL` en N partes (céntimos sobrantes a la parte 1) o
+        `BY_ITEMS` asignando todas las unidades vigentes no pagadas (FR-011, AC-2.1, AC-2.2).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSplitRequest' }
+      responses:
+        '200':
+          description: División creada; devuelve la cuenta actualizada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: Regla de división incumplida.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unassigned:
+                  value: { code: SPLIT_UNASSIGNED_UNITS, message: 'Asigna todas las unidades antes de confirmar la división', details: { unassigned: 2 } }
+                notAwaiting:
+                  value: { code: BILL_NOT_REQUESTED, message: 'El mozo debe pedir la cuenta antes de cobrar' }
+
+  /billing/accounts/{orderId}/close-without-charge:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [accounts]
+      summary: Cerrar sin cobro una cuenta con total cero
+      description: Mesa `POR_COBRAR` y total S/ 0.00 (todo anulado). Pedido `PAID`, mesa `LIBRE` (FR-009).
+      responses:
+        '200':
+          description: Cuenta cerrada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '409':
+          description: La cuenta tiene saldo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: ACCOUNT_HAS_BALANCE, message: 'La cuenta tiene saldo pendiente; regístralo como pago' }
+
+  /billing/closures/preview:
+    post:
+      tags: [closures]
+      summary: Comparar lo contado con lo registrado (no guarda)
+      description: 'Exige los montos contados antes de mostrar lo registrado: conteo a ciegas (FR-016, AC-3.1, AC-3.2).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClosureCounts' }
+      responses:
+        '200':
+          description: Comparación por método.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClosureSummary' }
+        '409': { $ref: '#/components/responses/OpenTables' }
+
+  /billing/closures:
+    get:
+      tags: [closures]
+      summary: Historial de cierres
+      description: Más reciente primero (FR-021, AC-3.6).
+      responses:
+        '200':
+          description: Cierres guardados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DayClosure' }
+    post:
+      tags: [closures]
+      summary: Confirmar el cierre del día
+      description: |
+        Vuelve a calcular lo registrado, exige `notes` si hay diferencias y asigna al cierre todos
+        los pagos sin cierre (FR-017 a FR-020, AC-3.3 a AC-3.5).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ClosureCounts'
+                - type: object
+                  properties:
+                    notes: { type: string, minLength: 5, maxLength: 300 }
+      responses:
+        '201':
+          description: Cierre guardado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayClosure' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: Mesas abiertas o falta la observación.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                openTables:
+                  value: { code: CLOSURE_OPEN_TABLES, message: 'No puedes cerrar con mesas abiertas', details: { tables: [3, 7] } }
+                notes:
+                  value: { code: CLOSURE_NOTES_REQUIRED, message: 'Explica las diferencias en la observación antes de cerrar' }
+
+  /reports/sales:
+    get:
+      tags: [reports]
+      summary: Ventas de un rango de fechas
+      description: Solo `ADMIN` (FR-022, FR-024, FR-025, AC-4.1 a AC-4.5).
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Resumen de ventas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SalesReport' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reports/top-dishes:
+    get:
+      tags: [reports]
+      summary: Platos más vendidos
+      description: Solo `ADMIN` (FR-023, AC-5.1 a AC-5.4).
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [units, amount], default: units }
+      responses:
+        '200':
+          description: Ranking de platos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TopDish' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    From:
+      name: from
+      in: query
+      required: true
+      description: Fecha inicial inclusiva (YYYY-MM-DD, zona de Perú).
+      schema: { type: string, format: date }
+    To:
+      name: to
+      in: query
+      required: true
+      description: Fecha final inclusiva; como máximo 366 días después de `from`.
+      schema: { type: string, format: date }
+
+  schemas:
+    Money:
+      type: object
+      required: [amount, formatted]
+      properties:
+        amount: { type: number, example: 42.5 }
+        formatted: { type: string, example: 'S/ 42.50' }
+
+    PaymentMethod:
+      type: string
+      enum: [CASH, YAPE_PLIN, CARD]
+
+    AccountSummary:
+      type: object
+      required: [orderId, tableNumber, waiter, total, paid, pending, tableStatus]
+      properties:
+        orderId: { type: string, format: uuid }
+        tableNumber: { type: integer }
+        tableStatus: { type: string, enum: [LIBRE, OCUPADA, POR_COBRAR] }
+        waiter: { $ref: '#/components/schemas/UserRef' }
+        total: { $ref: '#/components/schemas/Money' }
+        paid: { $ref: '#/components/schemas/Money' }
+        pending: { $ref: '#/components/schemas/Money' }
+
+    AccountItem:
+      type: object
+      required: [orderItemId, menuItem, quantity, voidedQuantity, activeQuantity, unitPrice, subtotal, paidUnits]
+      properties:
+        orderItemId: { type: string, format: uuid }
+        menuItem: { type: object, properties: { id: { type: string }, name: { type: string } } }
+        quantity: { type: integer }
+        voidedQuantity: { type: integer }
+        activeQuantity: { type: integer }
+        unitPrice: { $ref: '#/components/schemas/Money' }
+        subtotal: { $ref: '#/components/schemas/Money' }
+        paidUnits:
+          type: integer
+          description: Unidades cubiertas por partes ya pagadas (división por ítems).
+
+    Payment:
+      type: object
+      required: [id, method, amount, cashier, paidAt, status]
+      properties:
+        id: { type: string, format: uuid }
+        method: { $ref: '#/components/schemas/PaymentMethod' }
+        amount: { $ref: '#/components/schemas/Money' }
+        receivedAmount: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
+        changeAmount: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
+        reference: { type: [string, 'null'] }
+        partId: { type: [string, 'null'], format: uuid }
+        cashier: { $ref: '#/components/schemas/UserRef' }
+        paidAt: { type: string, format: date-time }
+        status: { type: string, enum: [VALID, VOIDED] }
+        voidReason: { type: [string, 'null'] }
+        voidedBy: { oneOf: [{ $ref: '#/components/schemas/UserRef' }, { type: 'null' }] }
+
+    BillPart:
+      type: object
+      required: [id, position, label, amount, paid, pending, items]
+      properties:
+        id: { type: string, format: uuid }
+        position: { type: integer }
+        label: { type: string, example: 'Parte 1' }
+        amount: { $ref: '#/components/schemas/Money' }
+        paid: { $ref: '#/components/schemas/Money' }
+        pending: { $ref: '#/components/schemas/Money' }
+        items:
+          type: array
+          description: Vacío en modo EQUAL.
+          items:
+            type: object
+            properties:
+              orderItemId: { type: string, format: uuid }
+              name: { type: string }
+              units: { type: integer }
+
+    AccountDetail:
+      type: object
+      required: [orderId, orderStatus, table, waiter, items, total, paid, pending, payments, split, canCharge, canCloseWithoutCharge]
+      properties:
+        orderId: { type: string, format: uuid }
+        orderStatus: { type: string, enum: [OPEN, PAID, CANCELLED] }
+        table: { type: object, properties: { id: { type: string }, tableNumber: { type: integer }, status: { type: string } } }
+        waiter: { $ref: '#/components/schemas/UserRef' }
+        items: { type: array, items: { $ref: '#/components/schemas/AccountItem' } }
+        total: { $ref: '#/components/schemas/Money' }
+        paid: { $ref: '#/components/schemas/Money' }
+        pending: { $ref: '#/components/schemas/Money' }
+        payments: { type: array, items: { $ref: '#/components/schemas/Payment' } }
+        split:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, mode, isStale, parts]
+              properties:
+                id: { type: string, format: uuid }
+                mode: { type: string, enum: [EQUAL, BY_ITEMS] }
+                isStale: { type: boolean }
+                parts: { type: array, items: { $ref: '#/components/schemas/BillPart' } }
+        canCharge:
+          type: boolean
+          description: Mesa POR_COBRAR, saldo > 0 y división vigente no desactualizada.
+        canCloseWithoutCharge: { type: boolean }
+
+    CreatePaymentRequest:
+      type: object
+      required: [method, amount]
+      additionalProperties: false
+      properties:
+        method: { $ref: '#/components/schemas/PaymentMethod' }
+        amount: { type: number, exclusiveMinimum: 0, multipleOf: 0.01 }
+        receivedAmount:
+          type: number
+          multipleOf: 0.01
+          description: Obligatorio con CASH; ≥ amount.
+        reference: { type: string, maxLength: 40, description: Solo YAPE_PLIN y CARD. }
+        partId: { type: string, format: uuid }
+
+    CreateSplitRequest:
+      oneOf:
+        - type: object
+          required: [mode, parts]
+          additionalProperties: false
+          properties:
+            mode: { const: EQUAL }
+            parts: { type: integer, minimum: 2, maximum: 20 }
+        - type: object
+          required: [mode, parts]
+          additionalProperties: false
+          properties:
+            mode: { const: BY_ITEMS }
+            parts:
+              type: array
+              minItems: 2
+              maxItems: 20
+              items:
+                type: object
+                required: [items]
+                properties:
+                  label: { type: string, maxLength: 30 }
+                  items:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: object
+                      required: [orderItemId, units]
+                      properties:
+                        orderItemId: { type: string, format: uuid }
+                        units: { type: integer, minimum: 1 }
+
+    ClosureCounts:
+      type: object
+      required: [countedCash, countedYapePlin, countedCard]
+      properties:
+        countedCash: { type: number, minimum: 0, multipleOf: 0.01 }
+        countedYapePlin: { type: number, minimum: 0, multipleOf: 0.01 }
+        countedCard: { type: number, minimum: 0, multipleOf: 0.01 }
+
+    ClosureLine:
+      type: object
+      required: [method, expected, counted, difference]
+      properties:
+        method: { $ref: '#/components/schemas/PaymentMethod' }
+        expected: { $ref: '#/components/schemas/Money' }
+        counted: { $ref: '#/components/schemas/Money' }
+        difference:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: Positivo = sobrante, negativo = faltante.
+
+    ClosureSummary:
+      type: object
+      required: [startedAt, lines, total, accountsCount, hasDifferences]
+      properties:
+        startedAt: { type: [string, 'null'], format: date-time }
+        lines: { type: array, items: { $ref: '#/components/schemas/ClosureLine' } }
+        total: { $ref: '#/components/schemas/Money' }
+        accountsCount: { type: integer }
+        hasDifferences: { type: boolean }
+
+    DayClosure:
+      allOf:
+        - $ref: '#/components/schemas/ClosureSummary'
+        - type: object
+          required: [id, closedAt, cashier, notes]
+          properties:
+            id: { type: string, format: uuid }
+            closedAt: { type: string, format: date-time }
+            cashier: { $ref: '#/components/schemas/UserRef' }
+            notes: { type: [string, 'null'] }
+
+    SalesReport:
+      type: object
+      required: [from, to, total, accountsCount, averageTicket, byDay, byMethod]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        total: { $ref: '#/components/schemas/Money' }
+        accountsCount: { type: integer }
+        averageTicket: { $ref: '#/components/schemas/Money' }
+        byDay:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              total: { $ref: '#/components/schemas/Money' }
+              accountsCount: { type: integer }
+        byMethod:
+          type: array
+          description: Siempre los tres métodos, en cero si no hay ventas.
+          items:
+            type: object
+            properties:
+              method: { $ref: '#/components/schemas/PaymentMethod' }
+              total: { $ref: '#/components/schemas/Money' }
+
+    TopDish:
+      type: object
+      required: [rank, menuItem, units, amount]
+      properties:
+        rank: { type: integer }
+        menuItem: { type: object, properties: { id: { type: string }, name: { type: string } } }
+        units: { type: integer }
+        amount: { $ref: '#/components/schemas/Money' }
+
+    UserRef:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+
+    Error:
+      type: object
+      required: [code, message]
+      description: |
+        Códigos nuevos de Caja: BILL_NOT_REQUESTED, PAYMENT_EXCEEDS_BALANCE,
+        INSUFFICIENT_CASH, PAYMENT_NOT_VOIDABLE, SPLIT_UNASSIGNED_UNITS, SPLIT_INVALID_ASSIGNMENT,
+        SPLIT_STALE, ACCOUNT_HAS_BALANCE, CLOSURE_OPEN_TABLES, CLOSURE_NOTES_REQUIRED,
+        INVALID_DATE_RANGE. Reutiliza ORDER_NOT_OPEN e IDEMPOTENCY_KEY_REUSED de la 003.
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+  responses:
+    ValidationError:
+      description: Datos inválidos (incluye INVALID_DATE_RANGE en reportes).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthenticated:
+      description: Sin sesión válida.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: El rol no permite la operación.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: El pedido o el pago no existe.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    OpenTables:
+      description: Hay mesas ocupadas o por cobrar.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: CLOSURE_OPEN_TABLES, message: 'No puedes cerrar con mesas abiertas', details: { tables: [3, 7] } }
+
+security:
+  - sessionCookie: []

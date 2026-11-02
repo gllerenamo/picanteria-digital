@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { BillingModule } from './billing/billing.module';
 import { ConfigModule } from './config/config.module';
 import { KitchenModule } from './kitchen/kitchen.module';
 import { MenuModule } from './menu/menu.module';
@@ -7,6 +8,14 @@ import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule, MenuModule, OrdersModule, KitchenModule],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    AuthModule,
+    MenuModule,
+    OrdersModule,
+    KitchenModule,
+    BillingModule,
+  ],
 })
 export class AppModule {}

@@ -11,7 +11,7 @@ const memory = new Map<string, string>();
  * UUID v4 con `crypto.getRandomValues`: `crypto.randomUUID` no existe en contextos no seguros,
  * como la demo abierta por `http://` desde la tablet en la red local.
  */
-function uuidV4(): string {
+export function uuidV4(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
   bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;

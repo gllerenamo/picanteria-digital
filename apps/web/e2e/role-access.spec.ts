@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { loginAs, type E2eUserKey } from './helpers/auth';
 
 const MENU: Record<E2eUserKey, string[]> = {
-  admin: ['Usuarios', 'Mozo', 'Cocina', 'Caja'],
+  admin: ['Usuarios', 'Carta', 'Reportes', 'Mozo', 'Cocina', 'Caja'],
   mozo: ['Mozo'],
   cocina: ['Cocina'],
   caja: ['Caja'],

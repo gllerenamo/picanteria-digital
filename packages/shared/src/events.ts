@@ -1,4 +1,5 @@
 import type { ReadyNotice } from './schemas/kitchen';
+import type { Money } from './schemas/orders';
 import type { TableStatus } from './schemas/menu';
 
 /** Eventos de tiempo real (specs/001-base-comun/contracts/websocket-events.md). */
@@ -14,6 +15,8 @@ export const REALTIME_EVENTS = {
   READY_NOTICE: 'kitchen:ready-notice',
   READY_NOTICE_CLOSED: 'kitchen:ready-notice-closed',
   VOID_ACKNOWLEDGED: 'kitchen:void-acknowledged',
+  // 005-caja-reportes (specs/005-caja-reportes/contracts/websocket-events.md).
+  BILLING_ACCOUNT_UPDATED: 'billing:account-updated',
 } as const;
 
 export interface SessionRevokedPayload {
@@ -88,6 +91,16 @@ export interface VoidAcknowledgedPayload {
   itemVoidId: string;
 }
 
+/** Cambió la cuenta de una mesa en caja: pagos, división o cierre (sala `role:CASHIER`). */
+export interface AccountUpdatedPayload {
+  orderId: string;
+  tableNumber: number;
+  reason: 'PAYMENT_CREATED' | 'PAYMENT_VOIDED' | 'SPLIT_CREATED' | 'PAID' | 'CLOSED_WITHOUT_CHARGE';
+  /** Saldo pendiente después del cambio. */
+  pending: Money;
+  changedAt: string;
+}
+
 /** Tipado de los eventos que el servidor envía al cliente. */
 export interface ServerToClientEvents {
   'auth:session-revoked': (payload: SessionRevokedPayload) => void;
@@ -99,4 +112,5 @@ export interface ServerToClientEvents {
   'kitchen:ready-notice': (payload: ReadyNoticePayload) => void;
   'kitchen:ready-notice-closed': (payload: ReadyNoticeClosedPayload) => void;
   'kitchen:void-acknowledged': (payload: VoidAcknowledgedPayload) => void;
+  'billing:account-updated': (payload: AccountUpdatedPayload) => void;
 }

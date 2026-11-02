@@ -22,12 +22,19 @@ async function main(): Promise<void> {
         { waiter: stale },
         { dispatches: { some: { sentBy: stale } } },
         { items: { some: { voids: { some: { voidedBy: stale } } } } },
+        { payments: { some: { cashier: stale } } },
       ],
     },
     select: { id: true },
   });
   const orderIds = testOrders.map((order) => order.id);
-  // Lo que guardó cocina (004) sobre esos ítems va primero.
+  // Lo que guardó caja (005) sobre esos pedidos va primero: pagos, divisiones y sus partes.
+  const ofTestOrders = { orderId: { in: orderIds } };
+  await prisma.payment.deleteMany({ where: ofTestOrders });
+  await prisma.billPartItem.deleteMany({ where: { part: { split: ofTestOrders } } });
+  await prisma.billPart.deleteMany({ where: { split: ofTestOrders } });
+  await prisma.billSplit.deleteMany({ where: ofTestOrders });
+  // Lo que guardó cocina (004) sobre esos ítems va antes que los ítems.
   const ofTestItems = { orderItem: { orderId: { in: orderIds } } };
   await prisma.kitchenVoidAck.deleteMany({ where: { itemVoid: ofTestItems } });
   await prisma.readyNotice.deleteMany({ where: ofTestItems });
