@@ -14,5 +14,10 @@ COPY apps/web apps/web
 RUN npm run build -w @picanteria/web
 
 FROM nginx:1.27-alpine
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+ENV PORT=8080
+ENV API_URL=http://api:3000
+ENV NGINX_ENVSUBST_FILTER="PORT|API_URL"
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+
+EXPOSE 8080
